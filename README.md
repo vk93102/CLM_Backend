@@ -52,7 +52,7 @@ gunicorn app:app --bind 0.0.0.0:$PORT
 
 **Environment Variables:**
 - `DJANGO_SETTINGS_MODULE`: `clm_backend.settings`
-- `PYTHON_VERSION`: `3.10.13`
+- `PYTHON_VERSION`: `3.11.7`
 - All the secrets listed above
 
 ### Local Development
