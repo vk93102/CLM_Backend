@@ -1,0 +1,3975 @@
+API Test Results - Mon Jan  5 17:15:49 IST 2026
+Base URL: http://13.48.148.79
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Login
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{"access":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY3Njk5OTUzLCJpYXQiOjE3Njc2MTM1NTMsImp0aSI6ImE1ZDFlOGI1OWMyOTRmNjliNjAxOGVhNzUzZmNjYmI1IiwidXNlcl9pZCI6IjZlNjBmNDNhLWQxNDEtNDkyMi05OWU5LTcxMWFmMjU4NWM4MiJ9.Tjg7uXdTt0JGB2zLmCTsuH3U6h_PfZKMHcJO30eRRxw","refresh":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc2ODIxODM1MywiaWF0IjoxNzY3NjEzNTUzLCJqdGkiOiIwODVhZTljMGZiODQ0M2MzODg2NDVhN2ZmZWQ3ODAzOSIsInVzZXJfaWQiOiI2ZTYwZjQzYS1kMTQxLTQ5MjItOTllOS03MTFhZjI1ODVjODIifQ.vcM6WAviVegF8K5sp-cTeYtvm4YI8So9ogDDY1IbNYQ","user":{"user_id":"6e60f43a-d141-4922-99e9-711af2585c82","email":"admin@example.com","first_name":"Admin","last_name":"User","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","is_staff":true}}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 2: List Contracts
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{"count":12,"next":null,"previous":null,"results":[{"id":"e8870bf5-de48-4bb7-ad29-740dd6a6d0ae","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"Test Service Agreement","contract_type":"MSA","status":"draft","value":null,"counterparty":null,"start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T11:19:58.514778Z","updated_at":"2026-01-05T11:19:58.514816Z"},{"id":"2e8ee480-ecae-466b-9aab-fc0dc3fd650b","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"Test Service Agreement","contract_type":"MSA","status":"draft","value":null,"counterparty":null,"start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T09:32:15.343451Z","updated_at":"2026-01-05T09:32:15.343470Z"},{"id":"0a7118f6-04c3-43fb-9f52-d6112005c0d4","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"Test Service Agreement","contract_type":"MSA","status":"draft","value":null,"counterparty":null,"start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T09:30:18.160333Z","updated_at":"2026-01-05T09:30:18.160452Z"},{"id":"d79dc149-0a5e-463a-b05b-a2b39cf47ed1","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"Test Service Agreement","contract_type":"MSA","status":"draft","value":null,"counterparty":null,"start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T09:07:26.987555Z","updated_at":"2026-01-05T09:07:26.987573Z"},{"id":"6706d58b-74fc-44ad-9203-bee428814527","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"AI Test Service Agreement","contract_type":"MSA","status":"draft","value":null,"counterparty":null,"start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T09:03:02.185943Z","updated_at":"2026-01-05T09:03:02.185992Z"},{"id":"6a350817-8ddd-4d4b-ab1a-db11c7eba1b0","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"Consulting Services Statement of Work","contract_type":"SOW","status":"active","value":"75000.00","counterparty":"Global Consulting Partners","start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T08:57:47.613540Z","updated_at":"2026-01-05T08:57:47.613574Z"},{"id":"1b58243a-cc9b-491e-ab0e-dd0bfeb6f7d1","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"SaaS Subscription Agreement","contract_type":"License","status":"active","value":"50000.00","counterparty":"Enterprise Client Corp","start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T08:57:46.590470Z","updated_at":"2026-01-05T08:57:46.590527Z"},{"id":"11342520-b7f6-4453-ac2f-976fdc6ab890","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"Employment Agreement - Senior Software Engineer","contract_type":"Employment","status":"executed","value":"150000.00","counterparty":"John Smith","start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T08:57:45.500226Z","updated_at":"2026-01-05T08:57:45.500263Z"},{"id":"76a7d0ac-3254-491e-b23b-dfba363075f0","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"Mutual Non-Disclosure Agreement","contract_type":"NDA","status":"active","value":null,"counterparty":"Strategic Partners LLC","start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T08:57:44.644618Z","updated_at":"2026-01-05T08:57:44.644812Z"},{"id":"3f11a152-be06-43b3-9df2-dfc9ab172644","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"Software Development Master Service Agreement","contract_type":"MSA","status":"active","value":"250000.00","counterparty":"TechCorp Solutions Inc","start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T08:57:43.587089Z","updated_at":"2026-01-05T08:57:43.587102Z"},{"id":"62575eb6-bace-41ae-a1fa-01c3a3b18e3f","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"AI Test Service Agreement","contract_type":"MSA","status":"draft","value":null,"counterparty":null,"start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T08:53:53.731424Z","updated_at":"2026-01-05T08:53:53.731448Z"},{"id":"5cdc62be-461d-46ff-8d0d-b8a340061c04","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"AI Test Service Agreement","contract_type":"MSA","status":"draft","value":null,"counterparty":null,"start_date":null,"end_date":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T08:52:01.174046Z","updated_at":"2026-01-05T08:52:01.174077Z"}]}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 3: Get Contract Details
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{"id":"e8870bf5-de48-4bb7-ad29-740dd6a6d0ae","tenant_id":"b32f8cc0-4241-4853-ad5a-40a3b8846b49","title":"Test Service Agreement","contract_type":"MSA","status":"draft","value":null,"counterparty":null,"start_date":null,"end_date":null,"is_approved":false,"approved_by":null,"approved_at":null,"created_by":"6e60f43a-d141-4922-99e9-711af2585c82","created_at":"2026-01-05T11:19:58.514778Z","updated_at":"2026-01-05T11:19:58.514816Z","latest_version":null}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 4: Hybrid Search (FAILED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Page not found at /api/search/global/</title>
+  <meta name="robots" content="NONE,NOARCHIVE">
+  <style type="text/css">
+    html * { padding:0; margin:0; }
+    body * { padding:10px 20px; }
+    body * * { padding:0; }
+    body { font:small sans-serif; background:#eee; color:#000; }
+    body>div { border-bottom:1px solid #ddd; }
+    h1 { font-weight:normal; margin-bottom:.4em; }
+    h1 span { font-size:60%; color:#666; font-weight:normal; }
+    table { border:none; border-collapse: collapse; width:100%; }
+    td, th { vertical-align:top; padding:2px 3px; }
+    th { width:12em; text-align:right; color:#666; padding-right:.5em; }
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
+    #summary { background: #ffc; }
+    #explanation { background:#eee; border-bottom: 0px none; }
+    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }
+  </style>
+</head>
+<body>
+  <div id="summary">
+    <h1>Page not found <span>(404)</span></h1>
+    
+    <table class="meta">
+      <tr>
+        <th>Request Method:</th>
+        <td>POST</td>
+      </tr>
+      <tr>
+        <th>Request URL:</th>
+        <td>http://13.48.148.79/api/search/global/</td>
+      </tr>
+      
+    </table>
+  </div>
+  <div id="info">
+    
+      <p>
+      Using the URLconf defined in <code>clm_backend.urls</code>,
+      Django tried these URL patterns, in this order:
+      </p>
+      <ol>
+        
+          <li>
+            
+                admin/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/auth/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives/$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate/$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent/$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics/$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses/$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve/$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version/$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download/$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url/$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version/$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses/$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)/$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^$
+                [name='api-root']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='api-root']
+            
+          </li>
+        
+      </ol>
+      <p>
+        
+          The current path, <code>api/search/global/</code>,
+        
+        didn’t match any of these.
+      </p>
+    
+  </div>
+
+  <div id="explanation">
+    <p>
+      You’re seeing this error because you have <code>DEBUG = True</code> in
+      your Django settings file. Change that to <code>False</code>, and Django
+      will display a standard 404 page.
+    </p>
+  </div>
+</body>
+</html>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 5: Autocomplete (FAILED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Page not found at /api/search/suggestions/</title>
+  <meta name="robots" content="NONE,NOARCHIVE">
+  <style type="text/css">
+    html * { padding:0; margin:0; }
+    body * { padding:10px 20px; }
+    body * * { padding:0; }
+    body { font:small sans-serif; background:#eee; color:#000; }
+    body>div { border-bottom:1px solid #ddd; }
+    h1 { font-weight:normal; margin-bottom:.4em; }
+    h1 span { font-size:60%; color:#666; font-weight:normal; }
+    table { border:none; border-collapse: collapse; width:100%; }
+    td, th { vertical-align:top; padding:2px 3px; }
+    th { width:12em; text-align:right; color:#666; padding-right:.5em; }
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
+    #summary { background: #ffc; }
+    #explanation { background:#eee; border-bottom: 0px none; }
+    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }
+  </style>
+</head>
+<body>
+  <div id="summary">
+    <h1>Page not found <span>(404)</span></h1>
+    
+    <table class="meta">
+      <tr>
+        <th>Request Method:</th>
+        <td>GET</td>
+      </tr>
+      <tr>
+        <th>Request URL:</th>
+        <td>http://13.48.148.79/api/search/suggestions/?q=soft&amp;limit=3</td>
+      </tr>
+      
+    </table>
+  </div>
+  <div id="info">
+    
+      <p>
+      Using the URLconf defined in <code>clm_backend.urls</code>,
+      Django tried these URL patterns, in this order:
+      </p>
+      <ol>
+        
+          <li>
+            
+                admin/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/auth/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives/$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate/$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent/$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics/$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses/$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve/$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version/$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download/$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url/$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version/$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses/$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)/$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^$
+                [name='api-root']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='api-root']
+            
+          </li>
+        
+      </ol>
+      <p>
+        
+          The current path, <code>api/search/suggestions/</code>,
+        
+        didn’t match any of these.
+      </p>
+    
+  </div>
+
+  <div id="explanation">
+    <p>
+      You’re seeing this error because you have <code>DEBUG = True</code> in
+      your Django settings file. Change that to <code>False</code>, and Django
+      will display a standard 404 page.
+    </p>
+  </div>
+</body>
+</html>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 6: Clause Summary (FAILED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Page not found at /api/analysis/clause-summary/</title>
+  <meta name="robots" content="NONE,NOARCHIVE">
+  <style type="text/css">
+    html * { padding:0; margin:0; }
+    body * { padding:10px 20px; }
+    body * * { padding:0; }
+    body { font:small sans-serif; background:#eee; color:#000; }
+    body>div { border-bottom:1px solid #ddd; }
+    h1 { font-weight:normal; margin-bottom:.4em; }
+    h1 span { font-size:60%; color:#666; font-weight:normal; }
+    table { border:none; border-collapse: collapse; width:100%; }
+    td, th { vertical-align:top; padding:2px 3px; }
+    th { width:12em; text-align:right; color:#666; padding-right:.5em; }
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
+    #summary { background: #ffc; }
+    #explanation { background:#eee; border-bottom: 0px none; }
+    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }
+  </style>
+</head>
+<body>
+  <div id="summary">
+    <h1>Page not found <span>(404)</span></h1>
+    
+    <table class="meta">
+      <tr>
+        <th>Request Method:</th>
+        <td>POST</td>
+      </tr>
+      <tr>
+        <th>Request URL:</th>
+        <td>http://13.48.148.79/api/analysis/clause-summary/</td>
+      </tr>
+      
+    </table>
+  </div>
+  <div id="info">
+    
+      <p>
+      Using the URLconf defined in <code>clm_backend.urls</code>,
+      Django tried these URL patterns, in this order:
+      </p>
+      <ol>
+        
+          <li>
+            
+                admin/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/auth/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives/$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate/$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent/$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics/$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses/$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve/$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version/$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download/$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url/$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version/$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses/$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)/$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^$
+                [name='api-root']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='api-root']
+            
+          </li>
+        
+      </ol>
+      <p>
+        
+          The current path, <code>api/analysis/clause-summary/</code>,
+        
+        didn’t match any of these.
+      </p>
+    
+  </div>
+
+  <div id="explanation">
+    <p>
+      You’re seeing this error because you have <code>DEBUG = True</code> in
+      your Django settings file. Change that to <code>False</code>, and Django
+      will display a standard 404 page.
+    </p>
+  </div>
+</body>
+</html>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 7: Related Contracts (FAILED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Page not found at /api/contracts/e8870bf5-de48-4bb7-ad29-740dd6a6d0ae/related/</title>
+  <meta name="robots" content="NONE,NOARCHIVE">
+  <style type="text/css">
+    html * { padding:0; margin:0; }
+    body * { padding:10px 20px; }
+    body * * { padding:0; }
+    body { font:small sans-serif; background:#eee; color:#000; }
+    body>div { border-bottom:1px solid #ddd; }
+    h1 { font-weight:normal; margin-bottom:.4em; }
+    h1 span { font-size:60%; color:#666; font-weight:normal; }
+    table { border:none; border-collapse: collapse; width:100%; }
+    td, th { vertical-align:top; padding:2px 3px; }
+    th { width:12em; text-align:right; color:#666; padding-right:.5em; }
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
+    #summary { background: #ffc; }
+    #explanation { background:#eee; border-bottom: 0px none; }
+    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }
+  </style>
+</head>
+<body>
+  <div id="summary">
+    <h1>Page not found <span>(404)</span></h1>
+    
+    <table class="meta">
+      <tr>
+        <th>Request Method:</th>
+        <td>GET</td>
+      </tr>
+      <tr>
+        <th>Request URL:</th>
+        <td>http://13.48.148.79/api/contracts/e8870bf5-de48-4bb7-ad29-740dd6a6d0ae/related/?limit=5</td>
+      </tr>
+      
+    </table>
+  </div>
+  <div id="info">
+    
+      <p>
+      Using the URLconf defined in <code>clm_backend.urls</code>,
+      Django tried these URL patterns, in this order:
+      </p>
+      <ol>
+        
+          <li>
+            
+                admin/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/auth/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives/$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate/$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent/$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics/$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses/$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve/$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version/$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download/$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url/$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version/$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses/$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)/$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^$
+                [name='api-root']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='api-root']
+            
+          </li>
+        
+      </ol>
+      <p>
+        
+          The current path, <code>api/contracts/e8870bf5-de48-4bb7-ad29-740dd6a6d0ae/related/</code>,
+        
+        didn’t match any of these.
+      </p>
+    
+  </div>
+
+  <div id="explanation">
+    <p>
+      You’re seeing this error because you have <code>DEBUG = True</code> in
+      your Django settings file. Change that to <code>False</code>, and Django
+      will display a standard 404 page.
+    </p>
+  </div>
+</body>
+</html>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 8: Contract Comparison (FAILED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Page not found at /api/analysis/compare/</title>
+  <meta name="robots" content="NONE,NOARCHIVE">
+  <style type="text/css">
+    html * { padding:0; margin:0; }
+    body * { padding:10px 20px; }
+    body * * { padding:0; }
+    body { font:small sans-serif; background:#eee; color:#000; }
+    body>div { border-bottom:1px solid #ddd; }
+    h1 { font-weight:normal; margin-bottom:.4em; }
+    h1 span { font-size:60%; color:#666; font-weight:normal; }
+    table { border:none; border-collapse: collapse; width:100%; }
+    td, th { vertical-align:top; padding:2px 3px; }
+    th { width:12em; text-align:right; color:#666; padding-right:.5em; }
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
+    #summary { background: #ffc; }
+    #explanation { background:#eee; border-bottom: 0px none; }
+    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }
+  </style>
+</head>
+<body>
+  <div id="summary">
+    <h1>Page not found <span>(404)</span></h1>
+    
+    <table class="meta">
+      <tr>
+        <th>Request Method:</th>
+        <td>POST</td>
+      </tr>
+      <tr>
+        <th>Request URL:</th>
+        <td>http://13.48.148.79/api/analysis/compare/</td>
+      </tr>
+      
+    </table>
+  </div>
+  <div id="info">
+    
+      <p>
+      Using the URLconf defined in <code>clm_backend.urls</code>,
+      Django tried these URL patterns, in this order:
+      </p>
+      <ol>
+        
+          <li>
+            
+                admin/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/auth/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives/$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate/$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent/$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics/$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses/$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve/$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version/$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download/$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url/$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version/$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses/$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)/$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^$
+                [name='api-root']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='api-root']
+            
+          </li>
+        
+      </ol>
+      <p>
+        
+          The current path, <code>api/analysis/compare/</code>,
+        
+        didn’t match any of these.
+      </p>
+    
+  </div>
+
+  <div id="explanation">
+    <p>
+      You’re seeing this error because you have <code>DEBUG = True</code> in
+      your Django settings file. Change that to <code>False</code>, and Django
+      will display a standard 404 page.
+    </p>
+  </div>
+</body>
+</html>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 9: Start Generation (FAILED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Page not found at /api/generation/start/</title>
+  <meta name="robots" content="NONE,NOARCHIVE">
+  <style type="text/css">
+    html * { padding:0; margin:0; }
+    body * { padding:10px 20px; }
+    body * * { padding:0; }
+    body { font:small sans-serif; background:#eee; color:#000; }
+    body>div { border-bottom:1px solid #ddd; }
+    h1 { font-weight:normal; margin-bottom:.4em; }
+    h1 span { font-size:60%; color:#666; font-weight:normal; }
+    table { border:none; border-collapse: collapse; width:100%; }
+    td, th { vertical-align:top; padding:2px 3px; }
+    th { width:12em; text-align:right; color:#666; padding-right:.5em; }
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
+    #summary { background: #ffc; }
+    #explanation { background:#eee; border-bottom: 0px none; }
+    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }
+  </style>
+</head>
+<body>
+  <div id="summary">
+    <h1>Page not found <span>(404)</span></h1>
+    
+    <table class="meta">
+      <tr>
+        <th>Request Method:</th>
+        <td>POST</td>
+      </tr>
+      <tr>
+        <th>Request URL:</th>
+        <td>http://13.48.148.79/api/generation/start/</td>
+      </tr>
+      
+    </table>
+  </div>
+  <div id="info">
+    
+      <p>
+      Using the URLconf defined in <code>clm_backend.urls</code>,
+      Django tried these URL patterns, in this order:
+      </p>
+      <ol>
+        
+          <li>
+            
+                admin/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/auth/
+                
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contract-templates/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-template-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives/$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^clauses/(?P&lt;pk&gt;[^/.]+)/alternatives\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='clause-alternatives']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate/$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/generate\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-generate']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent/$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/recent\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-recent']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics/$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/statistics\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-statistics']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses/$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/validate-clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-validate-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve/$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/approve\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-approve']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version/$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/create-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-create-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download/$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url/$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/download-url\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-download-url']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version/$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/new-version\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-new-version']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses/$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/clauses\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-clauses']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)/$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/(?P&lt;version_number&gt;[0-9]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-version-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions/$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^contracts/(?P&lt;pk&gt;[^/.]+)/versions\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='contract-versions']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-list']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)/$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^generation-jobs/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='generation-job-detail']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^$
+                [name='api-root']
+            
+          </li>
+        
+          <li>
+            
+                api/
+                
+            
+                
+                
+            
+                ^\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='api-root']
+            
+          </li>
+        
+      </ol>
+      <p>
+        
+          The current path, <code>api/generation/start/</code>,
+        
+        didn’t match any of these.
+      </p>
+    
+  </div>
+
+  <div id="explanation">
+    <p>
+      You’re seeing this error because you have <code>DEBUG = True</code> in
+      your Django settings file. Change that to <code>False</code>, and Django
+      will display a standard 404 page.
+    </p>
+  </div>
+</body>
+</html>
+
