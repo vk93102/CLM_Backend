@@ -26,6 +26,18 @@ INSTALLED_APPS = [
     'corsheaders',
     'authentication',
     'contracts',
+    'workflows',
+    'notifications',
+    'audit_logs',
+    'search',
+    'repository',
+    'metadata',
+    'ocr',
+    'redaction',
+    'ai',
+    'rules',
+    'approvals',
+    'tenants',
 ]
 
 MIDDLEWARE = [

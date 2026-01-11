@@ -296,3 +296,123 @@ class RefreshTokenView(APIView):
                 {'error': 'Invalid refresh token'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+
+class VerifyPasswordResetOTPView(APIView):
+    """
+    POST /api/auth/verify-password-reset-otp/
+    Verify password reset OTP
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email', '')
+        otp = request.data.get('otp', '')
+        
+        if not email or not otp:
+            return Response({'error': 'Email and OTP required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(email=email)
+            if hasattr(user, 'password_reset_otp') and user.password_reset_otp == otp:
+                return Response({'message': 'OTP verified successfully', 'verified': True})
+            return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class ResendPasswordResetOTPView(APIView):
+    """
+    POST /api/auth/resend-password-reset-otp/
+    Resend password reset OTP
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email', '')
+        
+        if not email:
+            return Response({'error': 'Email required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(email=email)
+            otp = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+            user.password_reset_otp = otp
+            user.save()
+            
+            send_mail(
+                'Password Reset OTP',
+                f'Your OTP is: {otp}',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=True,
+            )
+            
+            return Response({'message': 'OTP sent to email'})
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class RequestLoginOTPView(APIView):
+    """
+    POST /api/auth/request-login-otp/
+    Request OTP for passwordless login
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email', '')
+        
+        if not email:
+            return Response({'error': 'Email required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(email=email)
+            otp = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+            user.login_otp = otp
+            user.save()
+            
+            send_mail(
+                'Login OTP',
+                f'Your login OTP is: {otp}. Valid for 10 minutes.',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=True,
+            )
+            
+            return Response({'message': 'OTP sent to email', 'email': email})
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class VerifyEmailOTPView(APIView):
+    """
+    POST /api/auth/verify-email-otp/
+    Verify email using OTP
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email', '')
+        otp = request.data.get('otp', '')
+        
+        if not email or not otp:
+            return Response({'error': 'Email and OTP required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(email=email)
+            if hasattr(user, 'login_otp') and user.login_otp == otp:
+                from rest_framework_simplejwt.tokens import RefreshToken
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'message': 'Email verified successfully',
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh),
+                    'user': {
+                        'user_id': str(user.user_id),
+                        'email': user.email,
+                        'tenant_id': str(user.tenant_id),
+                    }
+                })
+            return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

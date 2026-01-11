@@ -6,9 +6,6 @@ import uuid
 
 
 class ContractTemplate(models.Model):
-    """
-    Contract template (DOCX) with version control
-    """
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('published', 'Published'),
@@ -127,6 +124,14 @@ class Contract(models.Model):
     end_date = models.DateField(blank=True, null=True, help_text='Contract end date')
     form_inputs = models.JSONField(default=dict, help_text='Structured intake form inputs')
     user_instructions = models.TextField(blank=True, null=True, help_text='Optional user instructions')
+    approval_chain = models.JSONField(default=dict, help_text='Approval chain configuration')
+    approval_required = models.BooleanField(default=False, help_text='Is approval required?')
+    current_approvers = models.JSONField(default=list, help_text='Current approvers')
+    document_r2_key = models.CharField(max_length=500, blank=True, null=True, help_text='R2 storage key for document')
+    last_edited_at = models.DateTimeField(blank=True, null=True, help_text='Last edited timestamp')
+    last_edited_by = models.UUIDField(blank=True, null=True, help_text='User ID who last edited')
+    description = models.TextField(blank=True, null=True, help_text='Contract description')
+    metadata = models.JSONField(default=dict, help_text='Additional metadata')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

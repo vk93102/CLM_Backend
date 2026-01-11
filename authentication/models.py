@@ -32,6 +32,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True)
     reset_token = models.CharField(max_length=255, blank=True, null=True)
     reset_token_expiry = models.DateTimeField(blank=True, null=True)
+    otp_attempts = models.IntegerField(default=0)
+    password_reset_otp = models.CharField(max_length=10, blank=True, null=True)
+    login_otp = models.CharField(max_length=10, blank=True, null=True)
+    otp_created_at = models.DateTimeField(blank=True, null=True)
 
     objects = UserManager()
 

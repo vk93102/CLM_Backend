@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 import uuid
@@ -30,7 +31,7 @@ from .services import ContractGenerator, RuleEngine
 from authentication.r2_service import R2StorageService
 
 
-class ContractTemplateViewSet(viewsets.ReadOnlyModelViewSet):
+class ContractTemplateViewSet(viewsets.ModelViewSet):
     """
     API endpoint for contract templates
     """
@@ -43,9 +44,16 @@ class ContractTemplateViewSet(viewsets.ReadOnlyModelViewSet):
             tenant_id=tenant_id,
             status='published'
         )
+    
+    def perform_create(self, serializer):
+        """Set tenant_id and created_by when creating a template"""
+        serializer.save(
+            tenant_id=self.request.user.tenant_id,
+            created_by=self.request.user.user_id
+        )
 
 
-class ClauseViewSet(viewsets.ReadOnlyModelViewSet):
+class ClauseViewSet(viewsets.ModelViewSet):
     """
     API endpoint for clauses with alternative suggestions
     """
@@ -65,6 +73,13 @@ class ClauseViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(contract_type=contract_type)
         
         return queryset
+    
+    def perform_create(self, serializer):
+        """Set tenant_id and created_by when creating a clause"""
+        serializer.save(
+            tenant_id=self.request.user.tenant_id,
+            created_by=self.request.user.user_id
+        )
     
     @action(detail=True, methods=['post'], url_path='alternatives')
     def alternatives(self, request, pk=None):
@@ -125,6 +140,134 @@ class ClauseViewSet(viewsets.ReadOnlyModelViewSet):
                 })
         
         return Response({'alternatives': result})
+    
+    @action(detail=False, methods=['post'], url_path='contract-suggestions')
+    def contract_suggestions(self, request):
+        """
+        POST /clauses/contract-suggestions/
+        Get clause suggestions for a contract
+        
+        Request:
+        {
+            "contract_id": "uuid"
+        }
+        """
+        contract_id = request.data.get('contract_id')
+        if not contract_id:
+            return Response(
+                {'error': 'contract_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            contract = Contract.objects.get(
+                id=contract_id,
+                tenant_id=request.user.tenant_id
+            )
+        except Exception:
+            # Handle invalid UUID or missing contract
+            return Response(
+                {'error': 'Contract not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        rule_engine = RuleEngine()
+        context = {
+            'contract_type': contract.contract_type,
+            'contract_value': float(contract.value or 0),
+            'counterparty': contract.counterparty
+        }
+        
+        # Get all published clauses for this contract type
+        clauses = Clause.objects.filter(
+            tenant_id=request.user.tenant_id,
+            contract_type=contract.contract_type,
+            status='published'
+        )
+        
+        suggestions = []
+        for clause in clauses:
+            suggestions_for_clause = rule_engine.get_clause_suggestions(
+                request.user.tenant_id,
+                contract.contract_type,
+                context,
+                clause.clause_id
+            )
+            if suggestions_for_clause:
+                suggestions.extend(suggestions_for_clause)
+        
+        return Response({'suggestions': suggestions})
+    
+    @action(detail=False, methods=['post'], url_path='bulk-suggestions')
+    def bulk_suggestions(self, request):
+        """
+        POST /clauses/bulk-suggestions/
+        Get clause suggestions for multiple contracts
+        
+        Request:
+        {
+            "contract_ids": ["uuid1", "uuid2"]
+        }
+        """
+        contract_ids = request.data.get('contract_ids', [])
+        
+        if not contract_ids or not isinstance(contract_ids, list):
+            return Response(
+                {'suggestions': {}},
+                status=status.HTTP_200_OK
+            )
+        
+        # Filter out invalid UUIDs
+        valid_ids = []
+        for cid in contract_ids:
+            try:
+                uuid.UUID(str(cid))
+                valid_ids.append(cid)
+            except (ValueError, AttributeError):
+                pass
+        
+        if not valid_ids:
+            return Response(
+                {'suggestions': {}},
+                status=status.HTTP_200_OK
+            )
+        
+        contracts = Contract.objects.filter(
+            id__in=valid_ids,
+            tenant_id=request.user.tenant_id
+        )
+        
+        rule_engine = RuleEngine()
+        suggestions = {}
+        
+        for contract in contracts:
+            context = {
+                'contract_type': contract.contract_type,
+                'contract_value': float(contract.value or 0),
+                'counterparty': contract.counterparty
+            }
+            
+            # Get all published clauses for this contract type
+            clauses = Clause.objects.filter(
+                tenant_id=request.user.tenant_id,
+                contract_type=contract.contract_type,
+                status='published'
+            )
+            
+            contract_suggestions = []
+            for clause in clauses:
+                suggestions_for_clause = rule_engine.get_clause_suggestions(
+                    request.user.tenant_id,
+                    contract.contract_type,
+                    context,
+                    clause.clause_id
+                )
+                if suggestions_for_clause:
+                    contract_suggestions.extend(suggestions_for_clause)
+            
+            suggestions[str(contract.id)] = contract_suggestions
+        
+        return Response({'suggestions': suggestions})
 
 
 class ContractViewSet(viewsets.ModelViewSet):
@@ -708,7 +851,7 @@ class ContractViewSet(viewsets.ModelViewSet):
             )
 
 
-class GenerationJobViewSet(viewsets.ReadOnlyModelViewSet):
+class GenerationJobViewSet(viewsets.ModelViewSet):
     """
     API endpoint for tracking async generation jobs
     """

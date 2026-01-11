@@ -9,6 +9,12 @@ from .views import (
     CurrentUserView,
     ForgotPasswordView,
     ResetPasswordView,
+    LogoutView,
+    RefreshTokenView,
+    VerifyPasswordResetOTPView,
+    ResendPasswordResetOTPView,
+    RequestLoginOTPView,
+    VerifyEmailOTPView,
 )
 
 urlpatterns = [
@@ -18,4 +24,10 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),
     path('reset-password/', ResetPasswordView.as_view(), name='reset_password'),
+    path('logout/', LogoutView.as_view(), name='logout'),
+    path('refresh/', RefreshTokenView.as_view(), name='refresh'),
+    path('verify-password-reset-otp/', VerifyPasswordResetOTPView.as_view(), name='verify_password_reset_otp'),
+    path('resend-password-reset-otp/', ResendPasswordResetOTPView.as_view(), name='resend_password_reset_otp'),
+    path('request-login-otp/', RequestLoginOTPView.as_view(), name='request_login_otp'),
+    path('verify-email-otp/', VerifyEmailOTPView.as_view(), name='verify_email_otp'),
 ]
