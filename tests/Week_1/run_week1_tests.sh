@@ -1,26 +1,18 @@
-#!/bin/bash
-
-# Week 1 Authentication - Complete Test Suite for Render API
-# This script tests all 13 authentication endpoints
-
 BASE_URL="https://clm-backend-at23.onrender.com"
 TIMESTAMP=$(date +%s)
 EMAIL="test_user_${TIMESTAMP}@example.com"
 PASSWORD="TestPassword123!"
 FULL_NAME="Test User"
 
-# Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m' 
 
-# Test counters
 PASSED=0
 FAILED=0
 
-# Helper function to print test results
 print_test() {
   local test_name=$1
   local status=$2
