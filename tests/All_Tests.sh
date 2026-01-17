@@ -1,11 +1,3 @@
-echo ""
-echo "╔════════════════════════════════════════════════════════════════════╗"
-echo "║                   COMPREHENSIVE TEST REPORT                       ║"
-echo "║                CLM Backend API - Full Test Suite                  ║"
-echo "║                    January 12, 2026                               ║"
-echo "╚════════════════════════════════════════════════════════════════════╝"
-echo ""
-
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'

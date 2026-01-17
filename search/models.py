@@ -34,7 +34,6 @@ class SearchIndexModel(models.Model):
     # Semantic embedding (for pgvector - optional)
     # embedding = VectorField(dimensions=1536, null=True, blank=True)
     
-    # Tracking
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     indexed_at = models.DateTimeField(auto_now=True)
@@ -53,11 +52,6 @@ class SearchIndexModel(models.Model):
 
 
 class SearchAnalyticsModel(models.Model):
-    """
-    Search Analytics and Metrics
-    Tracks search queries and usage patterns
-    """
-    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     tenant_id = models.UUIDField()
     user_id = models.UUIDField()

@@ -178,6 +178,11 @@ CORS_ALLOW_HEADERS = [
     'x-api-key',
 ]
 
+# AI/ML API Keys
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+VOYAGE_API_KEY = os.getenv('VOYAGE_API_KEY', '')
+VOYAGE_CONTEXT = os.getenv('VOYAGE_CONTEXT', '')  # Fallback for compatibility
+
 # Email Configuration - Google SMTP with App Password
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'

@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-"""
-Comprehensive CLM Backend API Test with Authentication Flow
-"""
 import requests
 import json
 from datetime import datetime

@@ -3,7 +3,6 @@ from .models import SearchIndexModel, SearchAnalyticsModel
 
 
 class SearchIndexSerializer(serializers.ModelSerializer):
-    """Serializer for search index results"""
     class Meta:
         model = SearchIndexModel
         fields = [
@@ -22,7 +21,6 @@ class SearchIndexSerializer(serializers.ModelSerializer):
 
 
 class SearchResultSerializer(serializers.Serializer):
-    """Serializer for formatted search results"""
     id = serializers.UUIDField()
     entity_type = serializers.CharField()
     entity_id = serializers.UUIDField()
@@ -52,14 +50,12 @@ class SearchAnalyticsSerializer(serializers.ModelSerializer):
 
 
 class SearchFacetSerializer(serializers.Serializer):
-    """Serializer for search facets"""
     name = serializers.CharField()
     count = serializers.IntegerField()
     value = serializers.CharField(required=False)
 
 
 class SearchFacetResponseSerializer(serializers.Serializer):
-    """Serializer for faceted search response"""
     entity_types = SearchFacetSerializer(many=True)
     keywords = SearchFacetSerializer(many=True)
     date_range = serializers.DictField()
@@ -67,7 +63,6 @@ class SearchFacetResponseSerializer(serializers.Serializer):
 
 
 class AdvancedSearchFilterSerializer(serializers.Serializer):
-    """Serializer for advanced search filters"""
     entity_type = serializers.CharField(required=False, allow_blank=True)
     date_from = serializers.DateTimeField(required=False, allow_null=True)
     date_to = serializers.DateTimeField(required=False, allow_null=True)
@@ -80,7 +75,6 @@ class AdvancedSearchFilterSerializer(serializers.Serializer):
 
 
 class HybridSearchRequestSerializer(serializers.Serializer):
-    """Serializer for hybrid search request"""
     query = serializers.CharField()
     limit = serializers.IntegerField(default=20, min_value=1, max_value=100)
     weights = serializers.DictField(required=False, default={

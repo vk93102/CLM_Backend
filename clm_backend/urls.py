@@ -24,7 +24,6 @@ urlpatterns = [
     path('api/', include('workflows.urls')),
     path('api/', include('notifications.urls')),
     path('api/', include('audit_logs.urls')),
-    path('api/search/', include('search.urls')),
     path('api/', include('repository.urls')),
     path('api/', include('metadata.urls')),
     path('api/', include('ocr.urls')),

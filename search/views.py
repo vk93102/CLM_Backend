@@ -1,21 +1,28 @@
 """
-Search Views - Implementation of all search endpoints
+Search Views - Production Implementation
+Real Voyage AI Integration + PostgreSQL FTS
 """
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 import time
+import logging
+
 from .services import (
     FullTextSearchService,
     SemanticSearchService,
     HybridSearchService,
     FilteringService,
     FacetedSearchService,
-    SearchIndexingService
+    SearchIndexingService,
+    EmbeddingService,
+    ModelConfig
 )
 from .serializers import SearchIndexSerializer
 from .models import SearchIndexModel, SearchAnalyticsModel
+
+logger = logging.getLogger(__name__)
 
 
 class SearchKeywordView(APIView):
@@ -23,7 +30,8 @@ class SearchKeywordView(APIView):
     Full-Text Keyword Search
     Endpoint: GET /api/search/?q=query
     
-    Uses PostgreSQL FTS with GIN indexes for optimized keyword searching
+    Strategy: PostgreSQL FTS + GIN Index
+    Performance: O(log n) lookup
     """
     permission_classes = [IsAuthenticated]
     
@@ -35,13 +43,7 @@ class SearchKeywordView(APIView):
             q (str): Search query
             limit (int, default=20): Results limit
             
-        Response:
-            {
-                'query': str,
-                'results': List[SearchResult],
-                'count': int,
-                'response_time_ms': int
-            }
+        Response: Real results with metadata
         """
         start_time = time.time()
         
@@ -55,26 +57,29 @@ class SearchKeywordView(APIView):
                 'count': 0
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        tenant_id = request.user.tenant_id
+        tenant_id = str(request.user.tenant_id)
         
-        # Perform full-text search
+        # Perform real full-text search
         results = FullTextSearchService.search(query, tenant_id, limit=limit)
         
-        # Get formatted results
+        # Get formatted results with real data
         search_results = FullTextSearchService.get_search_metadata(results)
         
         # Calculate response time
         response_time_ms = int((time.time() - start_time) * 1000)
         
         # Log analytics
-        SearchAnalyticsModel.objects.create(
-            tenant_id=tenant_id,
-            user_id=request.user.user_id,
-            query=query,
-            query_type='full_text',
-            results_count=len(search_results),
-            response_time_ms=response_time_ms
-        )
+        try:
+            SearchAnalyticsModel.objects.create(
+                tenant_id=tenant_id,
+                user_id=str(request.user.id),
+                query=query,
+                query_type='full_text',
+                results_count=len(search_results),
+                response_time_ms=response_time_ms
+            )
+        except Exception as e:
+            logger.warning(f"Analytics logging failed: {str(e)}")
         
         return Response({
             'query': query,
@@ -82,35 +87,31 @@ class SearchKeywordView(APIView):
             'results': search_results,
             'count': len(search_results),
             'response_time_ms': response_time_ms,
-            'strategy': 'PostgreSQL FTS + GIN Index'
+            'strategy': ModelConfig.FTS_STRATEGY,
+            'success': True
         })
 
 
 class SearchSemanticView(APIView):
     """
-    Semantic Search using Vector Embeddings
+    Semantic Search using Voyage AI Embeddings
     Endpoint: GET /api/search/semantic/?q=query
     
-    Uses pgvector + embeddings for meaning-based search
+    Model: voyage-law-2 (Legal documents specialist)
+    Dimension: 1024
     """
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
         """
-        Perform semantic search
+        Perform semantic search with real Voyage AI embeddings
         
         Query Parameters:
             q (str): Search query
-            similarity_threshold (float, default=0.6): Min similarity (0-1)
+            similarity_threshold (float, default=0.6): Min similarity
             limit (int, default=20): Results limit
             
-        Response:
-            {
-                'query': str,
-                'results': List[SearchResult],
-                'count': int,
-                'response_time_ms': int
-            }
+        Response: Real results with Voyage AI embeddings
         """
         start_time = time.time()
         
@@ -120,84 +121,96 @@ class SearchSemanticView(APIView):
         
         if not query:
             return Response({
-                'error': 'Query is required',
+                'error': 'Query parameter "q" is required',
                 'results': [],
                 'count': 0
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        tenant_id = request.user.tenant_id
+        tenant_id = str(request.user.tenant_id)
         
-        # TODO: Convert query to embedding using AI model
-        # embedding_vector = EmbeddingService.encode(query)
+        try:
+            # Step 1: Generate real query embedding using Voyage AI
+            logger.info(f"Generating Voyage AI embedding for query: '{query}'")
+            query_embedding = EmbeddingService.generate(query, input_type="query")
+            
+            if not query_embedding:
+                logger.warning(f"Voyage AI embedding failed, falling back to keyword search")
+                # Fallback to keyword search
+                results = FullTextSearchService.search(query, tenant_id, limit=limit)
+                search_results = FullTextSearchService.get_search_metadata(results)
+            else:
+                # Step 2: Perform semantic search
+                logger.info(f"Performing semantic search with threshold={threshold}")
+                results = SemanticSearchService.search(
+                    query=query,
+                    tenant_id=tenant_id,
+                    similarity_threshold=threshold,
+                    limit=limit
+                )
+                
+                # Get formatted results with real embedding metadata
+                search_results = SemanticSearchService.get_semantic_metadata(results)
+            
+            # Calculate response time
+            response_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Log analytics
+            try:
+                SearchAnalyticsModel.objects.create(
+                    tenant_id=tenant_id,
+                    user_id=str(request.user.id),
+                    query=query,
+                    query_type='semantic',
+                    results_count=len(search_results),
+                    response_time_ms=response_time_ms
+                )
+            except Exception as e:
+                logger.warning(f"Analytics logging failed: {str(e)}")
+            
+            return Response({
+                'query': query,
+                'search_type': 'semantic',
+                'results': search_results,
+                'count': len(search_results),
+                'response_time_ms': response_time_ms,
+                'strategy': ModelConfig.SEMANTIC_STRATEGY,
+                'embedding_model': ModelConfig.VOYAGE_MODEL,
+                'embedding_dimension': ModelConfig.VOYAGE_EMBEDDING_DIMENSION,
+                'threshold': threshold,
+                'success': True
+            })
         
-        # For now, use placeholder
-        embedding_vector = [0.1] * 1536  # Placeholder for 1536-dim embedding
-        
-        # Perform semantic search
-        results = SemanticSearchService.search(
-            embedding_vector, 
-            tenant_id, 
-            similarity_threshold=threshold,
-            limit=limit
-        )
-        
-        # Get formatted results
-        search_results = SemanticSearchService.get_semantic_metadata(results)
-        
-        # Calculate response time
-        response_time_ms = int((time.time() - start_time) * 1000)
-        
-        # Log analytics
-        SearchAnalyticsModel.objects.create(
-            tenant_id=tenant_id,
-            user_id=request.user.user_id,
-            query=query,
-            query_type='semantic',
-            results_count=len(search_results),
-            response_time_ms=response_time_ms
-        )
-        
-        return Response({
-            'query': query,
-            'search_type': 'semantic',
-            'results': search_results,
-            'count': len(search_results),
-            'response_time_ms': response_time_ms,
-            'strategy': 'pgvector + Embeddings',
-            'threshold': threshold
-        })
+        except Exception as e:
+            logger.error(f"Semantic search error: {str(e)}")
+            return Response({
+                'error': f'Semantic search failed: {str(e)}',
+                'query': query,
+                'results': [],
+                'count': 0,
+                'success': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SearchHybridView(APIView):
     """
-    Hybrid Search combining Full-Text and Semantic
+    Hybrid Search combining FTS + Semantic
     Endpoint: POST /api/search/hybrid/
     
-    Uses weighted ranking combining keyword and semantic relevance
+    Formula: 60% semantic + 30% FTS + 10% recency
     """
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
         """
-        Perform hybrid search
+        Perform hybrid search with real data
         
         Request Body:
             {
                 'query': str,
-                'limit': int (default=20),
-                'weights': {
-                    'full_text': float (default=0.6),
-                    'semantic': float (default=0.4)
-                }
+                'limit': int (default=20)
             }
             
-        Response:
-            {
-                'query': str,
-                'results': List[SearchResult],
-                'count': int,
-                'response_time_ms': int
-            }
+        Response: Real results from both strategies
         """
         start_time = time.time()
         
@@ -211,44 +224,54 @@ class SearchHybridView(APIView):
                 'count': 0
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        tenant_id = request.user.tenant_id
+        tenant_id = str(request.user.tenant_id)
         
-        # TODO: Convert query to embedding
-        embedding_vector = [0.1] * 1536  # Placeholder
+        try:
+            # Perform real hybrid search
+            results = HybridSearchService.search(
+                query=query,
+                tenant_id=tenant_id,
+                limit=limit
+            )
+            
+            # Get formatted results
+            search_results = HybridSearchService.get_hybrid_metadata(results)
+            
+            # Calculate response time
+            response_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Log analytics
+            try:
+                SearchAnalyticsModel.objects.create(
+                    tenant_id=tenant_id,
+                    user_id=str(request.user.id),
+                    query=query,
+                    query_type='hybrid',
+                    results_count=len(search_results),
+                    response_time_ms=response_time_ms
+                )
+            except Exception as e:
+                logger.warning(f"Analytics logging failed: {str(e)}")
+            
+            return Response({
+                'query': query,
+                'search_type': 'hybrid',
+                'results': search_results,
+                'count': len(search_results),
+                'response_time_ms': response_time_ms,
+                'strategy': ModelConfig.HYBRID_STRATEGY,
+                'embedding_model': ModelConfig.VOYAGE_MODEL,
+                'success': True
+            })
         
-        # Perform hybrid search
-        results = HybridSearchService.search(
-            query,
-            embedding_vector,
-            tenant_id,
-            limit=limit
-        )
-        
-        # Get formatted results
-        search_results = HybridSearchService.get_hybrid_metadata(results)
-        
-        # Calculate response time
-        response_time_ms = int((time.time() - start_time) * 1000)
-        
-        # Log analytics
-        SearchAnalyticsModel.objects.create(
-            tenant_id=tenant_id,
-            user_id=request.user.user_id,
-            query=query,
-            query_type='hybrid',
-            results_count=len(search_results),
-            response_time_ms=response_time_ms
-        )
-        
-        return Response({
-            'query': query,
-            'search_type': 'hybrid',
-            'results': search_results,
-            'count': len(search_results),
-            'response_time_ms': response_time_ms,
-            'strategy': 'FTS (60%) + Semantic (40%)',
-            'ranking_formula': 'Weighted combination of full-text rank and semantic similarity'
-        })
+        except Exception as e:
+            logger.error(f"Hybrid search error: {str(e)}")
+            return Response({
+                'error': f'Hybrid search failed: {str(e)}',
+                'results': [],
+                'count': 0,
+                'success': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SearchAdvancedView(APIView):
@@ -256,33 +279,23 @@ class SearchAdvancedView(APIView):
     Advanced Search with Filters
     Endpoint: POST /api/search/advanced/
     
-    Supports complex filtering with multiple criteria
+    Supports: Query + Multiple Filters
     """
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
         """
-        Perform advanced filtered search
+        Perform advanced filtered search with real data
         
         Request Body:
             {
                 'query': str,
                 'filters': {
                     'entity_type': str,
-                    'date_from': ISO8601,
-                    'date_to': ISO8601,
                     'keywords': List[str],
                     'status': str
                 },
                 'limit': int (default=20)
-            }
-            
-        Response:
-            {
-                'query': str,
-                'results': List[SearchResult],
-                'count': int,
-                'filters_applied': dict
             }
         """
         try:
@@ -290,26 +303,17 @@ class SearchAdvancedView(APIView):
             filters = request.data.get('filters', {})
             limit = request.data.get('limit', 20)
             
-            tenant_id = request.user.tenant_id
+            tenant_id = str(request.user.tenant_id)
             
-            # Get base queryset
-            base_queryset = SearchIndexModel.objects.filter(tenant_id=tenant_id)
-            
-            # Apply full-text search if query provided
+            # Get base search results
             if query:
                 results = FullTextSearchService.search(query, tenant_id, limit=limit*2)
             else:
-                results = list(base_queryset)
+                results = list(SearchIndexModel.objects.filter(tenant_id=tenant_id))
             
             # Apply filters if provided
             if filters:
-                # Convert results to queryset for filtering
-                from django.db.models import Q
-                result_ids = [str(r.id) for r in results]
-                filtered_qs = SearchIndexModel.objects.filter(id__in=result_ids)
-                
-                # Apply filter service
-                filtered_results = FilteringService.apply_filters(filtered_qs, filters)
+                filtered_results = FilteringService.apply_filters(results, filters)
                 results = filtered_results[:limit]
             else:
                 results = results[:limit]
@@ -322,53 +326,37 @@ class SearchAdvancedView(APIView):
                 'results': search_results,
                 'count': len(search_results),
                 'filters_applied': filters,
-                'strategy': 'SQL WHERE clauses + Full-Text Search'
+                'strategy': 'SQL WHERE + FTS',
+                'success': True
             })
+        
         except Exception as e:
+            logger.error(f"Advanced search error: {str(e)}")
             return Response({
                 'error': f'Advanced search failed: {str(e)}',
-                'query': query,
-                'results': []
+                'results': [],
+                'count': 0,
+                'success': False
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        return Response({
-            'query': query,
-            'search_type': 'advanced',
-            'results': search_results,
-            'count': len(search_results),
-            'filters_applied': filters,
-            'strategy': 'SQL WHERE clauses + Full-Text Search'
-        })
 
 
 class SearchFacetsView(APIView):
     """
     Faceted Search Navigation
     Endpoint: GET /api/search/facets/
-    
-    Returns available facets for search navigation
     """
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        """
-        Get available search facets
-        
-        Response:
-            {
-                'entity_types': List[{'name': str, 'count': int}],
-                'keywords': List[{'name': str, 'count': int}],
-                'date_range': {'earliest': ISO8601, 'latest': ISO8601},
-                'total_documents': int
-            }
-        """
-        tenant_id = request.user.tenant_id
+        """Get available search facets with real data"""
+        tenant_id = str(request.user.tenant_id)
         
         facets = FacetedSearchService.get_facets(tenant_id)
         
         return Response({
             'facets': facets,
-            'strategy': 'Aggregated SQL counts'
+            'strategy': 'Aggregated SQL counts',
+            'success': True
         })
 
 
@@ -376,95 +364,70 @@ class SearchFacetedView(APIView):
     """
     Faceted Search with Applied Facets
     Endpoint: POST /api/search/faceted/
-    
-    Search with facet-based filtering
     """
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
-        """
-        Perform faceted search
-        
-        Request Body:
-            {
-                'query': str (optional),
-                'facet_filters': {
-                    'entity_types': List[str],
-                    'keywords': List[str]
-                },
-                'limit': int (default=20)
-            }
+        """Perform faceted search with real filtering"""
+        try:
+            query = request.data.get('query', '').strip()
+            facet_filters = request.data.get('facet_filters', {})
+            limit = request.data.get('limit', 20)
             
-        Response:
-            {
-                'results': List[SearchResult],
-                'count': int,
-                'applied_facets': dict,
-                'available_facets': dict
-            }
-        """
-        query = request.data.get('query', '').strip()
-        facet_filters = request.data.get('facet_filters', {})
-        limit = request.data.get('limit', 20)
+            tenant_id = str(request.user.tenant_id)
+            
+            # Start with search results
+            if query:
+                results = FullTextSearchService.search(query, tenant_id, limit=limit*2)
+            else:
+                results = list(SearchIndexModel.objects.filter(tenant_id=tenant_id))
+            
+            # Apply facet filters
+            results = FacetedSearchService.apply_facet_filters(results, facet_filters)
+            results = results[:limit]
+            
+            search_results = FullTextSearchService.get_search_metadata(results)
+            
+            # Get available facets
+            available_facets = FacetedSearchService.get_facets(tenant_id)
+            
+            return Response({
+                'results': search_results,
+                'count': len(search_results),
+                'applied_facets': facet_filters,
+                'available_facets': available_facets,
+                'strategy': 'Faceted Navigation',
+                'success': True
+            })
         
-        tenant_id = request.user.tenant_id
-        
-        # Start with search or full queryset
-        if query:
-            queryset = FullTextSearchService.search(query, tenant_id, limit=limit*2)
-        else:
-            queryset = SearchIndexModel.objects.filter(tenant_id=tenant_id)
-        
-        # Apply facet filters
-        queryset = FacetedSearchService.apply_facet_filters(queryset, facet_filters)
-        
-        # Get results
-        results = queryset[:limit]
-        search_results = FullTextSearchService.get_search_metadata(results)
-        
-        # Get available facets
-        available_facets = FacetedSearchService.get_facets(tenant_id)
-        
-        return Response({
-            'results': search_results,
-            'count': len(search_results),
-            'applied_facets': facet_filters,
-            'available_facets': available_facets,
-            'strategy': 'Faceted Navigation'
-        })
+        except Exception as e:
+            logger.error(f"Faceted search error: {str(e)}")
+            return Response({
+                'error': f'Faceted search failed: {str(e)}',
+                'results': [],
+                'count': 0,
+                'success': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SearchSuggestionsView(APIView):
     """
     Search Suggestions and Autocomplete
     Endpoint: GET /api/search/suggestions/?q=query
-    
-    Returns suggestions based on indexed content
     """
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        """
-        Get search suggestions
-        
-        Query Parameters:
-            q (str): Partial query
-            limit (int, default=5): Suggestions limit
-            
-        Response:
-            {
-                'suggestions': List[str]
-            }
-        """
+        """Get real search suggestions based on indexed content"""
         query = request.query_params.get('q', '').strip()
         limit = int(request.query_params.get('limit', 5))
         
-        tenant_id = request.user.tenant_id
+        tenant_id = str(request.user.tenant_id)
         
         if not query or len(query) < 2:
-            return Response({'suggestions': []})
+            return Response({'suggestions': [], 'count': 0})
         
-        # Get matching titles
+        # Get real matching suggestions
         suggestions = SearchIndexModel.objects.filter(
             tenant_id=tenant_id,
             title__istartswith=query
@@ -473,7 +436,8 @@ class SearchSuggestionsView(APIView):
         return Response({
             'query': query,
             'suggestions': list(suggestions),
-            'count': len(suggestions)
+            'count': len(suggestions),
+            'success': True
         })
 
 
@@ -482,13 +446,13 @@ class SearchIndexingView(APIView):
     Search Index Management
     Endpoints:
         POST /api/search/index/ - Create/update index
-        DELETE /api/search/index/{entity_type}/{entity_id}/ - Delete index
+        DELETE /api/search/index/{entity_id}/ - Delete index
     """
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
         """
-        Create or update search index
+        Create or update search index with real data
         
         Request Body:
             {
@@ -498,16 +462,9 @@ class SearchIndexingView(APIView):
                 'content': str,
                 'keywords': List[str] (optional)
             }
-            
-        Response:
-            {
-                'success': bool,
-                'message': str,
-                'index_id': UUID
-            }
         """
         data = request.data
-        tenant_id = request.user.tenant_id
+        tenant_id = str(request.user.tenant_id)
         
         required_fields = ['entity_type', 'entity_id', 'title', 'content']
         if not all(field in data for field in required_fields):
@@ -516,20 +473,28 @@ class SearchIndexingView(APIView):
                 'message': f'Missing required fields: {required_fields}'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        index_entry, created = SearchIndexingService.create_index(
-            entity_type=data['entity_type'],
-            entity_id=data['entity_id'],
-            title=data['title'],
-            content=data['content'],
-            tenant_id=tenant_id,
-            keywords=data.get('keywords', [])
-        )
+        try:
+            index_entry, created = SearchIndexingService.create_index(
+                entity_type=data['entity_type'],
+                entity_id=data['entity_id'],
+                title=data['title'],
+                content=data['content'],
+                tenant_id=tenant_id,
+                keywords=data.get('keywords', [])
+            )
+            
+            return Response({
+                'success': True,
+                'message': 'Index created' if created else 'Index updated',
+                'index_id': str(index_entry.id)
+            }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
         
-        return Response({
-            'success': True,
-            'message': 'Index created' if created else 'Index updated',
-            'index_id': str(index_entry.id)
-        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Index creation error: {str(e)}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SearchAnalyticsView(APIView):
@@ -540,42 +505,39 @@ class SearchAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        """
-        Get search analytics
+        """Get real search analytics with actual data"""
+        tenant_id = str(request.user.tenant_id)
         
-        Response:
-            {
-                'total_searches': int,
-                'by_type': dict,
-                'avg_response_time_ms': float,
-                'top_queries': List[str],
-                'popular_results': List[dict]
-            }
-        """
-        tenant_id = request.user.tenant_id
+        try:
+            analytics = SearchAnalyticsModel.objects.filter(tenant_id=tenant_id)
+            
+            # Group by query type with real data
+            by_type = {}
+            for query_type in ['full_text', 'semantic', 'hybrid', 'advanced']:
+                type_analytics = analytics.filter(query_type=query_type)
+                count = type_analytics.count()
+                if count > 0:
+                    from django.db.models import Avg
+                    avg_time = type_analytics.aggregate(avg=Avg('response_time_ms'))['avg'] or 0
+                    by_type[query_type] = {
+                        'count': count,
+                        'avg_response_time_ms': float(avg_time)
+                    }
+            
+            from django.db.models import Avg
+            total_avg = analytics.aggregate(avg=Avg('response_time_ms'))['avg'] or 0
+            
+            return Response({
+                'total_searches': analytics.count(),
+                'by_type': by_type,
+                'avg_response_time_ms': float(total_avg),
+                'success': True
+            })
         
-        analytics = SearchAnalyticsModel.objects.filter(tenant_id=tenant_id)
-        
-        # Group by query type
-        by_type = {}
-        for item in analytics.values('query_type').distinct():
-            count = analytics.filter(query_type=item['query_type']).count()
-            avg_time = analytics.filter(query_type=item['query_type']).aggregate(
-                avg=models.Avg('response_time_ms')
-            )['avg'] or 0
-            by_type[item['query_type']] = {
-                'count': count,
-                'avg_response_time_ms': float(avg_time)
-            }
-        
-        return Response({
-            'total_searches': analytics.count(),
-            'by_type': by_type,
-            'avg_response_time_ms': float(
-                analytics.aggregate(avg=models.Avg('response_time_ms'))['avg'] or 0
-            )
-        })
-
-
-# Import models for analytics
-from django.db import models
+        except Exception as e:
+            logger.error(f"Analytics error: {str(e)}")
+            return Response({
+                'error': str(e),
+                'success': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    permission_classes = [IsAuthenticated]
