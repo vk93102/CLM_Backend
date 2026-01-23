@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from .models import (
     Contract, ContractVersion, ContractTemplate, Clause,
-    GenerationJob, BusinessRule, ContractClause
+    GenerationJob, BusinessRule, ContractClause, WorkflowLog,
+    ESignatureContract, Signer, SigningAuditLog,
+    ContractEditingSession, ContractEditingTemplate, ContractPreview,
+    ContractEditingStep, ContractEdits, ContractFieldValidationRule
 )
 
 
@@ -24,7 +27,7 @@ class ClauseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clause
         fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'tenant_id', 'created_by', 'created_at', 'updated_at']
 
 
 class ContractSerializer(serializers.ModelSerializer):
@@ -82,6 +85,21 @@ class BusinessRuleSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class WorkflowLogSerializer(serializers.ModelSerializer):
+    """Serializer for WorkflowLog model"""
+    class Meta:
+        model = WorkflowLog
+        fields = '__all__'
+        read_only_fields = ['id', 'timestamp']
+
+
+class ContractDecisionSerializer(serializers.Serializer):
+    """Serializer for contract decision/approval"""
+    contract_id = serializers.UUIDField(required=True)
+    decision = serializers.ChoiceField(choices=['approve', 'reject'], required=True)
+    comments = serializers.CharField(required=False, allow_blank=True)
+
+
 class ContractGenerateSerializer(serializers.Serializer):
     template_id = serializers.UUIDField(required=True)
     structured_inputs = serializers.JSONField(required=False, default=dict)
@@ -97,3 +115,248 @@ class ContractGenerateSerializer(serializers.Serializer):
 class ContractApproveSerializer(serializers.Serializer):
     reviewed = serializers.BooleanField(required=True)
     comments = serializers.CharField(required=False, allow_blank=True)
+
+
+
+# ========== MANUAL EDITING SERIALIZERS ==========
+
+class ContractEditingTemplateSerializer(serializers.ModelSerializer):
+    """
+    Serialize contract editing template with all form and clause configurations
+    """
+    class Meta:
+        model = ContractEditingTemplate
+        fields = [
+            'id', 'base_template_id', 'name', 'description', 'category',
+            'contract_type', 'form_fields', 'default_values', 'mandatory_clauses',
+            'optional_clauses', 'clause_order', 'constraint_templates',
+            'contract_content_template', 'styling_config', 'preview_sample',
+            'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class ContractFieldValidationRuleSerializer(serializers.ModelSerializer):
+    """
+    Serialize field validation rules
+    """
+    class Meta:
+        model = ContractFieldValidationRule
+        fields = ['id', 'template', 'field_name', 'rule_type', 'rule_value', 'error_message']
+        read_only_fields = ['id']
+
+
+class ContractEditsSerializer(serializers.ModelSerializer):
+    """
+    Serialize contract edits
+    """
+    class Meta:
+        model = ContractEdits
+        fields = ['id', 'session', 'edit_type', 'field_name', 'old_value', 
+                  'new_value', 'edit_reason', 'timestamp']
+        read_only_fields = ['id', 'timestamp']
+
+
+class ContractEditingStepSerializer(serializers.ModelSerializer):
+    """
+    Serialize editing steps
+    """
+    class Meta:
+        model = ContractEditingStep
+        fields = ['id', 'session', 'step_type', 'step_data', 'timestamp']
+        read_only_fields = ['id', 'timestamp']
+
+
+class ContractPreviewSerializer(serializers.ModelSerializer):
+    """
+    Serialize contract preview
+    """
+    class Meta:
+        model = ContractPreview
+        fields = ['id', 'session', 'preview_html', 'preview_text', 
+                  'generated_at', 'form_data_snapshot', 'clauses_snapshot',
+                  'constraints_snapshot']
+        read_only_fields = ['id', 'generated_at']
+
+
+class ContractEditingSessionDetailSerializer(serializers.ModelSerializer):
+    """
+    Detailed session serializer with steps and edits
+    """
+    steps = ContractEditingStepSerializer(many=True, read_only=True)
+    edits = ContractEditsSerializer(many=True, read_only=True)
+    preview = ContractPreviewSerializer(read_only=True)
+    
+    class Meta:
+        model = ContractEditingSession
+        fields = ['id', 'tenant_id', 'user_id', 'template_id', 'status',
+                  'form_data', 'selected_clause_ids', 'custom_clauses',
+                  'constraints_config', 'created_at', 'updated_at',
+                  'last_saved_at', 'steps', 'edits', 'preview']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'last_saved_at']
+
+
+class ContractEditingSessionSerializer(serializers.ModelSerializer):
+    """
+    Basic session serializer
+    """
+    class Meta:
+        model = ContractEditingSession
+        fields = ['id', 'tenant_id', 'user_id', 'template_id', 'status',
+                  'form_data', 'selected_clause_ids', 'custom_clauses',
+                  'constraints_config', 'created_at', 'updated_at', 'last_saved_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'last_saved_at']
+
+
+class FormFieldSubmissionSerializer(serializers.Serializer):
+    """
+    Validate form field submission
+    """
+    field_name = serializers.CharField(max_length=255)
+    field_value = serializers.JSONField()
+    
+    def validate(self, data):
+        # Additional validation logic can be added here
+        return data
+
+
+class ClauseSelectionSerializer(serializers.Serializer):
+    """
+    Validate clause selection
+    """
+    clause_ids = serializers.ListField(
+        child=serializers.CharField(max_length=100)
+    )
+    custom_clause_content = serializers.JSONField(required=False, allow_null=True)
+    
+    def validate_clause_ids(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one clause must be selected")
+        return value
+
+
+class ConstraintDefinitionSerializer(serializers.Serializer):
+    """
+    Validate constraint/version definitions
+    """
+    constraint_name = serializers.CharField(max_length=255)
+    constraint_value = serializers.JSONField()
+    applies_to_clauses = serializers.ListField(
+        child=serializers.CharField(),
+        required=False
+    )
+
+
+class ContractPreviewRequestSerializer(serializers.Serializer):
+    """
+    Request parameters for generating contract preview
+    """
+    form_data = serializers.JSONField()
+    selected_clause_ids = serializers.ListField(
+        child=serializers.CharField()
+    )
+    custom_clauses = serializers.JSONField(required=False)
+    constraints_config = serializers.JSONField(required=False)
+
+
+class ContractEditAfterPreviewSerializer(serializers.Serializer):
+    """
+    Validate edits made after preview
+    """
+    edit_type = serializers.ChoiceField(
+        choices=['form_field', 'clause_added', 'clause_removed', 
+                 'clause_content_edited', 'constraint_added', 'constraint_modified']
+    )
+    field_name = serializers.CharField(max_length=255, required=False)
+    old_value = serializers.JSONField(required=False, allow_null=True)
+    new_value = serializers.JSONField(required=False, allow_null=True)
+    edit_reason = serializers.CharField(required=False, max_length=500)
+
+
+class FinalizedContractSerializer(serializers.Serializer):
+    """
+    Finalize contract after editing
+    """
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, max_length=1000)
+    contract_value = serializers.DecimalField(
+        max_digits=15, decimal_places=2, required=False, allow_null=True
+    )
+    effective_date = serializers.DateField(required=False)
+    expiration_date = serializers.DateField(required=False)
+    additional_metadata = serializers.JSONField(required=False)
+
+# ========== SIGNNOW SERIALIZERS ==========
+
+class SignerSerializer(serializers.ModelSerializer):
+    """Serializer for Signer model"""
+    
+    class Meta:
+        model = Signer
+        fields = [
+            'id',
+            'email',
+            'name',
+            'signing_order',
+            'status',
+            'has_signed',
+            'signed_at',
+            'invited_at',
+            'signing_url',
+            'signing_url_expires_at',
+            'declined_reason',
+        ]
+        read_only_fields = ['id', 'invited_at', 'signed_at']
+
+
+class SigningAuditLogSerializer(serializers.ModelSerializer):
+    """Serializer for SigningAuditLog model"""
+    
+    signer_email = serializers.CharField(source='signer.email', read_only=True)
+    
+    class Meta:
+        model = SigningAuditLog
+        fields = [
+            'id',
+            'event',
+            'message',
+            'signer_email',
+            'old_status',
+            'new_status',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
+class ESignatureContractSerializer(serializers.ModelSerializer):
+    """Serializer for ESignatureContract model"""
+    
+    signers = SignerSerializer(many=True, read_only=True)
+    audit_logs = SigningAuditLogSerializer(many=True, read_only=True)
+    contract_title = serializers.CharField(source='contract.title', read_only=True)
+    
+    class Meta:
+        model = ESignatureContract
+        fields = [
+            'id',
+            'contract_title',
+            'signnow_document_id',
+            'status',
+            'signing_order',
+            'sent_at',
+            'completed_at',
+            'expires_at',
+            'signers',
+            'audit_logs',
+            'last_status_check_at',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = [
+            'id',
+            'signnow_document_id',
+            'sent_at',
+            'completed_at',
+            'created_at',
+            'updated_at',
+        ]
