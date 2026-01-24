@@ -4,7 +4,7 @@ Provides detailed information about contract templates and their structure
 """
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from .template_definitions import (
     get_template_type, 
@@ -17,6 +17,8 @@ from .models import ContractTemplate
 from .serializers import ContractTemplateSerializer
 import uuid
 import os
+import re
+from django.utils import timezone
 from django.conf import settings
 
 
@@ -366,7 +368,9 @@ class TemplateFileView(APIView):
         "size": 2458
     }
     """
-    permission_classes = [IsAuthenticated]
+    # Keep this endpoint for template-type based previews, but the UI can use
+    # the file-based endpoints below for exact raw file rendering.
+    permission_classes = [AllowAny]
     
     def get(self, request, template_type):
         """Get template file content"""
@@ -417,12 +421,6 @@ class TemplateFileView(APIView):
                     if template_type.lower() in c:
                         preferred = cand
                         break
-                # Common fallbacks
-                if not preferred and template_type == 'MSA':
-                    for cand in candidates:
-                        if 'service' in cand.lower() or 'agreement' in cand.lower():
-                            preferred = cand
-                            break
                 if preferred:
                     filename = preferred
                     template_path = os.path.join(settings.BASE_DIR, 'templates', filename)
@@ -451,6 +449,178 @@ class TemplateFileView(APIView):
                 'description': template_def['description']
             }, status=status.HTTP_200_OK)
         
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': f'Failed to read template file: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _templates_dir() -> str:
+    return os.path.join(settings.BASE_DIR, 'templates')
+
+
+def _infer_template_type(filename: str) -> str:
+    name = filename.lower()
+    if 'nda' in name:
+        return 'NDA'
+    if 'employ' in name:
+        return 'EMPLOYMENT'
+    if 'agency' in name:
+        return 'AGENCY_AGREEMENT'
+    if 'property' in name:
+        return 'PROPERTY_MANAGEMENT'
+    if 'purchase' in name:
+        return 'PURCHASE_AGREEMENT'
+    if 'msa' in name or 'master' in name:
+        return 'MSA'
+    return 'SERVICE_AGREEMENT'
+
+
+def _display_name_from_filename(filename: str) -> str:
+    base = os.path.splitext(os.path.basename(filename))[0]
+    base = base.replace('_', ' ').replace('-', ' ').strip()
+    base = re.sub(r'\s+', ' ', base)
+    return base.title() if base else 'Template'
+
+
+def _sanitize_filename(name: str) -> str:
+    # Prevent path traversal and keep filenames simple.
+    base = os.path.basename(name).strip()
+    base = base.replace('\\', '').replace('/', '')
+    base = re.sub(r'[^A-Za-z0-9 _.-]+', '', base)
+    base = re.sub(r'\s+', '_', base).strip('_')
+    if not base.lower().endswith('.txt'):
+        base = f"{base}.txt" if base else 'New_Template.txt'
+    return base
+
+
+class TemplateFilesView(APIView):
+    """Filesystem-backed templates (no DB).
+
+    GET  /api/v1/templates/files/                 -> list templates in CLM_Backend/templates
+    POST /api/v1/templates/files/                 -> create a new .txt template file
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        templates_dir = _templates_dir()
+        if not os.path.isdir(templates_dir):
+            return Response({
+                'success': True,
+                'count': 0,
+                'results': [],
+                'message': 'Templates directory not found'
+            }, status=status.HTTP_200_OK)
+
+        files = [f for f in os.listdir(templates_dir) if f.lower().endswith('.txt')]
+        files.sort(key=lambda f: os.path.getmtime(os.path.join(templates_dir, f)), reverse=True)
+
+        results = []
+        for f in files:
+            path = os.path.join(templates_dir, f)
+            try:
+                mtime = timezone.datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.get_current_timezone())
+                ctime = timezone.datetime.fromtimestamp(os.path.getctime(path), tz=timezone.get_current_timezone())
+            except Exception:
+                mtime = timezone.now()
+                ctime = timezone.now()
+
+            results.append({
+                'id': f,
+                'filename': f,
+                'name': _display_name_from_filename(f),
+                'contract_type': _infer_template_type(f),
+                'status': 'active',
+                'created_at': ctime.isoformat(),
+                'updated_at': mtime.isoformat(),
+            })
+
+        return Response({
+            'success': True,
+            'count': len(results),
+            'results': results,
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        name = (request.data.get('name') or '').strip()
+        filename = (request.data.get('filename') or '').strip()
+        content = request.data.get('content')
+
+        if content is None:
+            return Response({
+                'success': False,
+                'error': 'content is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        proposed = filename or name or 'New Template'
+        safe = _sanitize_filename(proposed)
+
+        templates_dir = _templates_dir()
+        os.makedirs(templates_dir, exist_ok=True)
+
+        path = os.path.join(templates_dir, safe)
+        if os.path.exists(path):
+            return Response({
+                'success': False,
+                'error': 'A template with that filename already exists',
+                'filename': safe,
+            }, status=status.HTTP_409_CONFLICT)
+
+        try:
+            with open(path, 'w', encoding='utf-8', newline='') as f:
+                f.write(content)
+
+            now = timezone.now().isoformat()
+            return Response({
+                'success': True,
+                'template': {
+                    'id': safe,
+                    'filename': safe,
+                    'name': _display_name_from_filename(safe),
+                    'contract_type': _infer_template_type(safe),
+                    'status': 'active',
+                    'created_at': now,
+                    'updated_at': now,
+                }
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': f'Failed to create template file: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TemplateFileContentView(APIView):
+    """GET /api/v1/templates/files/content/{filename}/ -> exact raw file content."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, filename: str):
+        safe = _sanitize_filename(filename)
+        templates_dir = _templates_dir()
+        path = os.path.join(templates_dir, safe)
+
+        if not os.path.exists(path):
+            return Response({
+                'success': False,
+                'error': 'Template file not found',
+                'filename': safe,
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            return Response({
+                'success': True,
+                'filename': safe,
+                'name': _display_name_from_filename(safe),
+                'template_type': _infer_template_type(safe),
+                'content': content,
+                'size': os.path.getsize(path),
+            }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({
                 'success': False,
