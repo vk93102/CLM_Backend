@@ -33,9 +33,24 @@ class ClauseSerializer(serializers.ModelSerializer):
 class ContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
-        fields = ['id', 'tenant_id', 'title', 'contract_type', 'status', 'value',
-                  'counterparty', 'start_date', 'end_date', 'created_by',
-                  'created_at', 'updated_at']
+        fields = [
+            'id',
+            'tenant_id',
+            'title',
+            'contract_type',
+            'status',
+            'value',
+            'counterparty',
+            'start_date',
+            'end_date',
+            'form_inputs',
+            'user_instructions',
+            'clauses',
+            'metadata',
+            'created_by',
+            'created_at',
+            'updated_at',
+        ]
         read_only_fields = ['id', 'tenant_id', 'created_by', 'created_at', 'updated_at']
 
 
@@ -54,13 +69,33 @@ class ContractClauseSerializer(serializers.ModelSerializer):
 
 class ContractDetailSerializer(serializers.ModelSerializer):
     latest_version = serializers.SerializerMethodField()
+    rendered_text = serializers.SerializerMethodField()
     
     class Meta:
         model = Contract
-        fields = ['id', 'tenant_id', 'title', 'contract_type', 'status', 'value',
-                  'counterparty', 'start_date', 'end_date', 'is_approved',
-                  'approved_by', 'approved_at', 'created_by', 'created_at',
-                  'updated_at', 'latest_version']
+        fields = [
+            'id',
+            'tenant_id',
+            'title',
+            'contract_type',
+            'status',
+            'value',
+            'counterparty',
+            'start_date',
+            'end_date',
+            'form_inputs',
+            'user_instructions',
+            'clauses',
+            'metadata',
+            'rendered_text',
+            'is_approved',
+            'approved_by',
+            'approved_at',
+            'created_by',
+            'created_at',
+            'updated_at',
+            'latest_version',
+        ]
         read_only_fields = ['id', 'tenant_id', 'created_by', 'created_at', 'updated_at']
     
     def get_latest_version(self, obj):
@@ -68,6 +103,12 @@ class ContractDetailSerializer(serializers.ModelSerializer):
             latest = obj.versions.latest('version_number')
             return ContractVersionSerializer(latest).data
         except ContractVersion.DoesNotExist:
+            return None
+
+    def get_rendered_text(self, obj):
+        try:
+            return (obj.metadata or {}).get('rendered_text')
+        except Exception:
             return None
 
 

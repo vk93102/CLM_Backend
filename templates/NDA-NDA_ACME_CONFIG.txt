@@ -1,0 +1,88 @@
+This Non-Disclosure Agreement (“Agreement”) is made and entered into as of [Date] (“Effective Date”), by and between:
+
+Disclosing Party: [Legal Name], located at [Address]
+
+Receiving Party: [Legal Name], located at [Address]
+
+1. Purpose
+
+The Disclosing Party intends to disclose certain confidential information to the Receiving Party for the purpose of [Purpose/Project/Discussion].
+
+2. Definition of Confidential Information
+
+“Confidential Information” means all non-public information disclosed by the Disclosing Party, whether oral, written, visual, or electronic, including without limitation:
+
+business plans & strategies
+
+product or technical data
+
+source code, documentation, software
+
+pricing & financial data
+
+customer/vendor lists
+
+IP, trade secrets, and proprietary methodologies
+
+any data marked “confidential”
+
+3. Exclusions
+
+Confidential Information does not include information that:
+
+a. was publicly known prior to disclosure;
+b. becomes public through no fault of the Receiving Party;
+c. was lawfully obtained from a third party; or
+d. was independently developed by the Receiving Party without use of Confidential Information.
+
+4. Obligations
+
+Receiving Party agrees to:
+
+a. maintain Confidential Information in strict confidence;
+b. not disclose it to any third party without prior written consent;
+c. use it solely for the Purpose defined above.
+
+5. Term
+
+This Agreement begins on the Effective Date and will remain in effect for [X years] after termination or completion of discussions.
+
+6. Return or Destruction
+
+Upon written request, Receiving Party shall promptly return or destroy all Confidential Information and certify destruction upon request.
+
+7. No License
+
+Nothing in this Agreement grants rights to trademarks, patents, copyrights, software, or other IP unless explicitly stated.
+
+8. No Warranty
+
+All Confidential Information is provided “as-is” without warranty regarding accuracy, completeness, or performance.
+
+9. Remedies
+
+Receiving Party acknowledges that unauthorized disclosure may cause irreparable harm and that Disclosing Party may seek injunctive relief in addition to other legal remedies.
+
+10. Governing Law
+
+This Agreement shall be governed by and construed under the laws of [Jurisdiction/Country/State].
+
+11. Entire Agreement
+
+This Agreement constitutes the entire understanding between the parties and supersedes prior agreements regarding Confidential Information.
+
+12. Signatures
+
+Disclosing Party:
+Name: __________________
+Title: __________________
+Company: ______________
+Signature: ______________
+Date: __________________
+
+Receiving Party:
+Name: __________________
+Title: __________________
+Company: ______________
+Signature: ______________
+Date: __________________

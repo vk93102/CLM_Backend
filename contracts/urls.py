@@ -13,6 +13,7 @@ from .template_views import (
     TemplateFileView,
     TemplateFilesView,
     TemplateFileContentView,
+    TemplateMyFilesView,
 )
 from .pdf_views import (
     ContractPDFDownloadView,
@@ -36,6 +37,7 @@ urlpatterns = [
     path('templates/create-from-type/', CreateTemplateFromTypeView.as_view(), name='create-template-from-type'),
     path('templates/validate/', ValidateTemplateDataView.as_view(), name='validate-template-data'),
     path('templates/files/', TemplateFilesView.as_view(), name='template-files'),
+    path('templates/files/mine/', TemplateMyFilesView.as_view(), name='template-files-mine'),
     path('templates/files/content/<str:filename>/', TemplateFileContentView.as_view(), name='template-file-content'),
     path('templates/files/<str:template_type>/', TemplateFileView.as_view(), name='template-file'),
     

@@ -18,6 +18,7 @@ from .serializers import ContractTemplateSerializer
 import uuid
 import os
 import re
+import json
 from django.utils import timezone
 from django.conf import settings
 
@@ -460,6 +461,39 @@ def _templates_dir() -> str:
     return os.path.join(settings.BASE_DIR, 'templates')
 
 
+def _meta_path_for_template(template_path: str) -> str:
+    # Store metadata alongside the .txt file without touching the DB.
+    return f"{template_path}.meta.json"
+
+
+def _json_safe(value):
+    if isinstance(value, uuid.UUID):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(v) for v in value]
+    return value
+
+
+def _read_template_meta(template_path: str) -> dict:
+    meta_path = _meta_path_for_template(template_path)
+    if not os.path.exists(meta_path):
+        return {}
+    try:
+        with open(meta_path, 'r', encoding='utf-8') as f:
+            data = json.load(f) or {}
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _write_template_meta(template_path: str, meta: dict) -> None:
+    meta_path = _meta_path_for_template(template_path)
+    with open(meta_path, 'w', encoding='utf-8', newline='') as f:
+        json.dump(_json_safe(meta or {}), f, ensure_ascii=False, indent=2)
+
+
 def _infer_template_type(filename: str) -> str:
     name = filename.lower()
     if 'nda' in name:
@@ -502,7 +536,11 @@ class TemplateFilesView(APIView):
     POST /api/v1/templates/files/                 -> create a new .txt template file
     """
 
-    permission_classes = [AllowAny]
+    def get_permissions(self):
+        # Listing templates is public; creating templates requires auth so we can attribute ownership.
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
 
     def get(self, request):
         templates_dir = _templates_dir()
@@ -527,6 +565,8 @@ class TemplateFilesView(APIView):
                 mtime = timezone.now()
                 ctime = timezone.now()
 
+            meta = _read_template_meta(path)
+
             results.append({
                 'id': f,
                 'filename': f,
@@ -535,6 +575,9 @@ class TemplateFilesView(APIView):
                 'status': 'active',
                 'created_at': ctime.isoformat(),
                 'updated_at': mtime.isoformat(),
+                'created_by_id': meta.get('created_by_id'),
+                'created_by_email': meta.get('created_by_email'),
+                'description': meta.get('description') or '',
             })
 
         return Response({
@@ -546,6 +589,7 @@ class TemplateFilesView(APIView):
     def post(self, request):
         name = (request.data.get('name') or '').strip()
         filename = (request.data.get('filename') or '').strip()
+        description = (request.data.get('description') or '').strip()
         content = request.data.get('content')
 
         if content is None:
@@ -573,6 +617,18 @@ class TemplateFilesView(APIView):
                 f.write(content)
 
             now = timezone.now().isoformat()
+            created_by_id = getattr(request.user, 'user_id', None)
+            created_by_email = getattr(request.user, 'email', None)
+            _write_template_meta(
+                path,
+                {
+                    'created_by_id': created_by_id,
+                    'created_by_email': created_by_email,
+                    'description': description,
+                    'created_at': now,
+                    'updated_at': now,
+                },
+            )
             return Response({
                 'success': True,
                 'template': {
@@ -583,6 +639,9 @@ class TemplateFilesView(APIView):
                     'status': 'active',
                     'created_at': now,
                     'updated_at': now,
+                    'created_by_id': str(created_by_id) if created_by_id else None,
+                    'created_by_email': created_by_email,
+                    'description': description,
                 }
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -590,6 +649,75 @@ class TemplateFilesView(APIView):
                 'success': False,
                 'error': f'Failed to create template file: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TemplateMyFilesView(APIView):
+    """Authenticated user's templates (filesystem + metadata).
+
+    GET /api/v1/templates/files/mine/
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        templates_dir = _templates_dir()
+        if not os.path.isdir(templates_dir):
+            return Response({
+                'success': True,
+                'count': 0,
+                'results': [],
+                'message': 'Templates directory not found'
+            }, status=status.HTTP_200_OK)
+
+        user_id = getattr(request.user, 'user_id', None)
+        user_id_str = str(user_id) if user_id else None
+        email = getattr(request.user, 'email', None)
+
+        files = [f for f in os.listdir(templates_dir) if f.lower().endswith('.txt')]
+        files.sort(key=lambda f: os.path.getmtime(os.path.join(templates_dir, f)), reverse=True)
+
+        results = []
+        for f in files:
+            path = os.path.join(templates_dir, f)
+            meta = _read_template_meta(path)
+            if not meta:
+                continue
+
+            meta_created_by_id = meta.get('created_by_id')
+            meta_created_by_id_str = str(meta_created_by_id) if meta_created_by_id else None
+
+            if user_id_str and meta_created_by_id_str == user_id_str:
+                pass
+            elif email and meta.get('created_by_email') == email:
+                pass
+            else:
+                continue
+
+            try:
+                mtime = timezone.datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.get_current_timezone())
+                ctime = timezone.datetime.fromtimestamp(os.path.getctime(path), tz=timezone.get_current_timezone())
+            except Exception:
+                mtime = timezone.now()
+                ctime = timezone.now()
+
+            results.append({
+                'id': f,
+                'filename': f,
+                'name': _display_name_from_filename(f),
+                'contract_type': _infer_template_type(f),
+                'status': 'active',
+                'created_at': ctime.isoformat(),
+                'updated_at': mtime.isoformat(),
+                'created_by_id': meta.get('created_by_id'),
+                'created_by_email': meta.get('created_by_email'),
+                'description': meta.get('description') or '',
+            })
+
+        return Response({
+            'success': True,
+            'count': len(results),
+            'results': results,
+        }, status=status.HTTP_200_OK)
 
 
 class TemplateFileContentView(APIView):

@@ -29,6 +29,8 @@ import uuid
 import hashlib
 import json
 import logging
+import os
+import re
 
 from .models import (
     Contract, WorkflowLog, ContractVersion, ContractTemplate, Clause,
@@ -578,6 +580,49 @@ class ContractViewSet(viewsets.ModelViewSet):
         elif self.action == 'approve':
             return ContractApproveSerializer
         return ContractSerializer
+
+    def _templates_dir(self) -> str:
+        from django.conf import settings
+        return os.path.join(settings.BASE_DIR, 'templates')
+
+    def _sanitize_template_filename(self, name: str) -> str:
+        base = os.path.basename((name or '').strip())
+        base = base.replace('\\', '').replace('/', '')
+        base = re.sub(r'[^A-Za-z0-9 _.-]+', '', base)
+        base = re.sub(r'\s+', '_', base).strip('_')
+        if not base.lower().endswith('.txt'):
+            base = f"{base}.txt" if base else 'Template.txt'
+        return base
+
+    def _render_template_text(self, raw_text: str, values: dict) -> str:
+        if not raw_text:
+            return ''
+        if not values:
+            return raw_text
+
+        rendered = raw_text
+        for key, value in values.items():
+            if key is None:
+                continue
+            placeholder = re.compile(r'\{\{\s*' + re.escape(str(key)) + r'\s*\}\}')
+            rendered = placeholder.sub(str(value) if value is not None else '', rendered)
+        return rendered
+
+    def _infer_contract_type_from_filename(self, filename: str) -> str:
+        name = (filename or '').lower()
+        if 'nda' in name:
+            return 'NDA'
+        if 'employ' in name:
+            return 'EMPLOYMENT'
+        if 'agency' in name:
+            return 'AGENCY_AGREEMENT'
+        if 'property' in name:
+            return 'PROPERTY_MANAGEMENT'
+        if 'purchase' in name:
+            return 'PURCHASE_AGREEMENT'
+        if 'msa' in name or 'master' in name:
+            return 'MSA'
+        return 'SERVICE_AGREEMENT'
     
     def get_queryset(self):
         tenant_id = self.request.user.tenant_id
@@ -904,6 +949,91 @@ class ContractViewSet(viewsets.ModelViewSet):
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=False, methods=['post'], url_path='generate-from-file')
+    def generate_from_file(self, request):
+        """POST /contracts/generate-from-file/
+
+        Creates a Contract using a filesystem-backed template (.txt) without DB templates.
+
+        Request:
+        {
+          "filename": "NDA.txt",
+          "structured_inputs": {"counterparty_name": "Acme Corp"},
+          "user_instructions": "...",
+          "title": "NDA with Acme",
+          "selected_clauses": ["CONF-001"]
+        }
+        """
+
+        tenant_id = request.user.tenant_id
+        user_id = request.user.user_id
+        if not tenant_id:
+            return Response({'error': 'Tenant ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        filename = request.data.get('filename')
+        if not filename:
+            return Response({'error': 'filename is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        structured_inputs = request.data.get('structured_inputs') or {}
+        if not isinstance(structured_inputs, dict):
+            return Response({'error': 'structured_inputs must be an object'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_instructions = request.data.get('user_instructions')
+        title = request.data.get('title')
+        selected_clauses = request.data.get('selected_clauses') or []
+        if selected_clauses is not None and not isinstance(selected_clauses, list):
+            return Response({'error': 'selected_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        safe = self._sanitize_template_filename(filename)
+        path = os.path.join(self._templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                raw_text = f.read()
+        except Exception as e:
+            return Response({'error': f'Failed to read template file: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        rendered_text = self._render_template_text(raw_text, structured_inputs)
+        inferred_type = self._infer_contract_type_from_filename(safe)
+        counterparty = structured_inputs.get('counterparty') or structured_inputs.get('counterparty_name')
+
+        with transaction.atomic():
+            contract = Contract.objects.create(
+                tenant_id=tenant_id,
+                created_by=user_id,
+                title=(title or os.path.splitext(safe)[0]),
+                status='draft',
+                contract_type=inferred_type,
+                counterparty=counterparty,
+                form_inputs=structured_inputs,
+                user_instructions=user_instructions,
+                clauses=selected_clauses,
+                metadata={
+                    'template_filename': safe,
+                    'template_source': 'filesystem',
+                    'raw_text': raw_text,
+                    'rendered_text': rendered_text,
+                },
+            )
+
+            WorkflowLog.objects.create(
+                contract=contract,
+                action='created',
+                performed_by=user_id,
+                comment=f'Created from template file {safe}',
+            )
+
+        return Response(
+            {
+                'contract': ContractDetailSerializer(contract).data,
+                'rendered_text': rendered_text,
+                'raw_text': raw_text,
+            },
+            status=status.HTTP_201_CREATED,
+        )
     
     @action(detail=True, methods=['get'], url_path='versions')
     def versions(self, request, pk=None):
