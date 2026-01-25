@@ -23,7 +23,7 @@ from django.db import transaction, connection
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.utils import timezone
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from datetime import datetime, timedelta
 import uuid
 import hashlib
@@ -633,6 +633,118 @@ class ContractViewSet(viewsets.ModelViewSet):
         serializer.save(
             tenant_id=self.request.user.tenant_id,
             created_by=self.request.user.user_id
+        )
+
+    def _strip_html(self, html: str) -> str:
+        """Best-effort HTML -> plain text conversion for exports."""
+        if not html:
+            return ''
+        # Keep line breaks for common tags.
+        text = re.sub(r'(?i)<\s*br\s*/?>', '\n', html)
+        text = re.sub(r'(?i)</\s*(p|div|h\d|li)\s*>', '\n', text)
+        text = re.sub(r'<[^>]+>', '', text)
+        # Unescape a few common entities without pulling in extra deps.
+        text = text.replace('&nbsp;', ' ').replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+        return re.sub(r'\n{3,}', '\n\n', text).strip()
+
+    def _contract_export_text(self, contract: Contract) -> str:
+        md = contract.metadata or {}
+        txt = md.get('rendered_text')
+        if isinstance(txt, str) and txt.strip():
+            return txt
+        html = md.get('rendered_html')
+        if isinstance(html, str) and html.strip():
+            return self._strip_html(html)
+        return ''
+
+    @action(detail=True, methods=['patch'], url_path='content')
+    def update_content(self, request, pk=None):
+        """Persist editor changes into Contract.metadata (rendered_text/rendered_html)."""
+        contract = self.get_object()
+
+        rendered_text = request.data.get('rendered_text', None)
+        rendered_html = request.data.get('rendered_html', None)
+
+        if rendered_text is not None and not isinstance(rendered_text, str):
+            return Response({'error': 'rendered_text must be a string'}, status=status.HTTP_400_BAD_REQUEST)
+        if rendered_html is not None and not isinstance(rendered_html, str):
+            return Response({'error': 'rendered_html must be a string'}, status=status.HTTP_400_BAD_REQUEST)
+        if rendered_text is None and rendered_html is None:
+            return Response({'error': 'rendered_text or rendered_html is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if rendered_text is None and rendered_html is not None:
+            rendered_text = self._strip_html(rendered_html)
+
+        md = contract.metadata or {}
+        if rendered_text is not None:
+            md['rendered_text'] = rendered_text
+        if rendered_html is not None:
+            md['rendered_html'] = rendered_html
+
+        contract.metadata = md
+        contract.last_edited_at = timezone.now()
+        contract.last_edited_by = request.user.user_id
+        contract.save(update_fields=['metadata', 'last_edited_at', 'last_edited_by', 'updated_at'])
+
+        return Response(ContractDetailSerializer(contract).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='download-txt')
+    def download_txt(self, request, pk=None):
+        contract = self.get_object()
+        text = self._contract_export_text(contract)
+        filename = f"{(contract.title or 'contract').strip().replace(' ', '_')}.txt"
+
+        resp = HttpResponse(text, content_type='text/plain; charset=utf-8')
+        resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return resp
+
+    @action(detail=True, methods=['get'], url_path='download-pdf')
+    def download_pdf(self, request, pk=None):
+        contract = self.get_object()
+        text = self._contract_export_text(contract)
+
+        from io import BytesIO
+        import textwrap
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import LETTER
+        from reportlab.lib.units import inch
+
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=LETTER)
+        width, height = LETTER
+        left = 0.75 * inch
+        top = height - 0.75 * inch
+        bottom = 0.75 * inch
+
+        text_obj = c.beginText(left, top)
+        text_obj.setFont('Times-Roman', 11)
+
+        max_chars = 110
+        for line in (text or '').splitlines():
+            wrapped_lines = textwrap.wrap(
+                line,
+                width=max_chars,
+                replace_whitespace=False,
+                drop_whitespace=False,
+            ) or ['']
+            for wl in wrapped_lines:
+                if text_obj.getY() <= bottom:
+                    c.drawText(text_obj)
+                    c.showPage()
+                    text_obj = c.beginText(left, top)
+                    text_obj.setFont('Times-Roman', 11)
+                text_obj.textLine(wl)
+
+        c.drawText(text_obj)
+        c.save()
+        buffer.seek(0)
+
+        filename = f"{(contract.title or 'contract').strip().replace(' ', '_')}.pdf"
+        return FileResponse(
+            buffer,
+            as_attachment=True,
+            filename=filename,
+            content_type='application/pdf',
         )
 
     # ---------------------------------------------------------------------

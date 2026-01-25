@@ -1,12 +1,13 @@
 from pathlib import Path
 from datetime import timedelta
 import os
+from urllib.parse import urlparse, parse_qs, unquote
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from this project reliably (do not depend on CWD).
+load_dotenv(dotenv_path=BASE_DIR / '.env', override=False)
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-dev-key-12345')
 
@@ -76,7 +77,81 @@ TEMPLATES = [
 WSGI_APPLICATION = 'clm_backend.wsgi.application'
 
 # Database configuration (Supabase/PostgreSQL only)
+DATABASE_URL = os.getenv('DATABASE_URL', '').strip()
 DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.postgresql')
+DB_HOST = os.getenv('DB_HOST', '')
+DB_PORT = os.getenv('DB_PORT', '5432')
+
+
+def _parse_database_url(database_url: str) -> dict:
+    """Parse a Postgres DATABASE_URL into Django DATABASES['default'] keys."""
+    parsed = urlparse(database_url)
+    scheme = (parsed.scheme or '').lower()
+    if scheme not in ('postgres', 'postgresql'):
+        raise ValueError('DATABASE_URL must start with postgresql://')
+
+    name = (parsed.path or '').lstrip('/')
+    if not name:
+        name = 'postgres'
+
+    user = unquote(parsed.username or '')
+    password = unquote(parsed.password or '')
+    host = parsed.hostname or ''
+    port = str(parsed.port or 5432)
+
+    qs = parse_qs(parsed.query or '')
+    sslmode = (qs.get('sslmode', [None])[0] or os.getenv('DB_SSLMODE', 'require'))
+
+    # Keep compatibility with Supabase pooler constraints.
+    using_pooler = 'pooler.supabase.com' in (host or '')
+
+    # Supabase pooler requires the user in the form `postgres.<project_ref>`.
+    # If a DATABASE_URL is accidentally set to `postgres@...pooler.supabase.com`,
+    # authentication will fail (and can trigger the pooler circuit-breaker).
+    if using_pooler and (not user or '.' not in user):
+        env_user = (os.getenv('DB_USER', '') or '').strip()
+        env_password = (os.getenv('DB_PASSWORD', '') or '').strip()
+        if env_user and '.' in env_user:
+            user = env_user
+            if not password and env_password:
+                password = env_password
+    default_conn_max_age = 0 if using_pooler else 60
+    conn_max_age = int(os.getenv('DB_CONN_MAX_AGE', str(default_conn_max_age)))
+
+    return {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': name,
+        'USER': user,
+        'PASSWORD': password,
+        'HOST': host,
+        'PORT': port,
+        'CONN_MAX_AGE': conn_max_age,
+        'CONN_HEALTH_CHECKS': True,
+        'DISABLE_SERVER_SIDE_CURSORS': True,
+        'OPTIONS': {
+            'sslmode': sslmode,
+            'connect_timeout': int(os.getenv('DB_CONNECT_TIMEOUT', '20')),
+            'keepalives': 1,
+            'keepalives_idle': int(os.getenv('DB_KEEPALIVES_IDLE', '30')),
+            'keepalives_interval': int(os.getenv('DB_KEEPALIVES_INTERVAL', '10')),
+            'keepalives_count': int(os.getenv('DB_KEEPALIVES_COUNT', '5')),
+            'options': os.getenv(
+                'DB_PG_OPTIONS',
+                '-c statement_timeout=120000 -c idle_in_transaction_session_timeout=120000',
+            ),
+        },
+        'TEST': {
+            'NAME': os.getenv('DB_TEST_NAME', 'test_postgres'),
+            'MIGRATE': os.getenv('DB_TEST_MIGRATE', 'false').strip().lower() in ('1', 'true', 'yes', 'y', 'on'),
+        },
+    }
+
+# Supabase pooler notes:
+# - If you use the Supabase pooler host (contains "pooler.supabase.com"), you MUST avoid long-lived connections.
+#   Session mode poolers have a small pool_size; persistent Django connections can exhaust it quickly.
+# - If possible, prefer Supabase pooler in TRANSACTION mode (often port 6543 in Supabase UI), and keep CONN_MAX_AGE=0.
+USING_SUPABASE_POOLER = 'pooler.supabase.com' in (DB_HOST or '')
+DEFAULT_CONN_MAX_AGE = 0 if USING_SUPABASE_POOLER else 60
 
 DATABASES = {
     'default': {
@@ -84,10 +159,13 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME', 'postgres'),
         'USER': os.getenv('DB_USER', ''),
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', ''),
-        'PORT': os.getenv('DB_PORT', '5432'),
-        # Keep connections warm; Supabase poolers can be sensitive to idle closes.
-        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
+        # For Supabase pooler: keep this at 0 to avoid "max clients reached".
+        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', str(DEFAULT_CONN_MAX_AGE))),
+        # Recommended for pgbouncer/poolers.
+        'CONN_HEALTH_CHECKS': True,
+        'DISABLE_SERVER_SIDE_CURSORS': True,
         'OPTIONS': {
             'sslmode': os.getenv('DB_SSLMODE', 'require'),
             # psycopg2/libpq connect timeout (seconds)
@@ -108,6 +186,10 @@ DATABASES = {
         },
     }
 }
+
+# If a single DATABASE_URL is provided, it takes precedence.
+if DATABASE_URL:
+    DATABASES['default'] = _parse_database_url(DATABASE_URL)
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

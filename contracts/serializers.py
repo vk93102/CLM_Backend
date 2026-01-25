@@ -70,6 +70,7 @@ class ContractClauseSerializer(serializers.ModelSerializer):
 class ContractDetailSerializer(serializers.ModelSerializer):
     latest_version = serializers.SerializerMethodField()
     rendered_text = serializers.SerializerMethodField()
+    rendered_html = serializers.SerializerMethodField()
     
     class Meta:
         model = Contract
@@ -88,6 +89,7 @@ class ContractDetailSerializer(serializers.ModelSerializer):
             'clauses',
             'metadata',
             'rendered_text',
+            'rendered_html',
             'is_approved',
             'approved_by',
             'approved_at',
@@ -108,6 +110,12 @@ class ContractDetailSerializer(serializers.ModelSerializer):
     def get_rendered_text(self, obj):
         try:
             return (obj.metadata or {}).get('rendered_text')
+        except Exception:
+            return None
+
+    def get_rendered_html(self, obj):
+        try:
+            return (obj.metadata or {}).get('rendered_html')
         except Exception:
             return None
 
