@@ -1,0 +1,31 @@
+STATEMENT OF WORK (SOW)
+
+This Statement of Work ("SOW") is entered into by and between:
+
+Client: {{client_name}}
+Provider: {{provider_name}}
+
+Project Name: {{project_name}}
+Start Date: {{start_date}}
+End Date: {{end_date}}
+
+1. Scope
+Provider will perform the services and deliverables described for the Project.
+
+2. Fees
+Total fees for this SOW are ${{payment_amount}} unless otherwise agreed in writing.
+
+3. Acceptance
+Deliverables will be deemed accepted upon written confirmation or if no rejection is received within a reasonable period.
+
+{{clauses_section}}
+
+Authorized Signatures
+
+Client: {{client_name}}
+Signature: __________________________
+Date: _______________________________
+
+Provider: {{provider_name}}
+Signature: __________________________
+Date: _______________________________

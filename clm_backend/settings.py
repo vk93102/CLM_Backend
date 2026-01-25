@@ -75,26 +75,39 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'clm_backend.wsgi.application'
 
-# Database configuration
-DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
+# Database configuration (Supabase/PostgreSQL only)
+DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.postgresql')
+
 DATABASES = {
     'default': {
         'ENGINE': DB_ENGINE,
-        'NAME': os.getenv('DB_NAME', 'db.sqlite3') if DB_ENGINE == 'django.db.backends.sqlite3' else os.getenv('DB_NAME', 'postgres'),
-    }
-}
-
-# For PostgreSQL, add additional configuration
-if DB_ENGINE != 'django.db.backends.sqlite3':
-    DATABASES['default'].update({
+        'NAME': os.getenv('DB_NAME', 'postgres'),
         'USER': os.getenv('DB_USER', ''),
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', ''),
         'PORT': os.getenv('DB_PORT', '5432'),
+        # Keep connections warm; Supabase poolers can be sensitive to idle closes.
+        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
         'OPTIONS': {
             'sslmode': os.getenv('DB_SSLMODE', 'require'),
+            # psycopg2/libpq connect timeout (seconds)
+            'connect_timeout': int(os.getenv('DB_CONNECT_TIMEOUT', '20')),
+            # libpq keepalives
+            'keepalives': 1,
+            'keepalives_idle': int(os.getenv('DB_KEEPALIVES_IDLE', '30')),
+            'keepalives_interval': int(os.getenv('DB_KEEPALIVES_INTERVAL', '10')),
+            'keepalives_count': int(os.getenv('DB_KEEPALIVES_COUNT', '5')),
+            # Server-side timeouts (ms)
+            'options': os.getenv('DB_PG_OPTIONS', '-c statement_timeout=120000 -c idle_in_transaction_session_timeout=120000'),
         },
-    })
+        'TEST': {
+            # Use a stable Supabase test DB name; run tests with --keepdb.
+            'NAME': os.getenv('DB_TEST_NAME', 'test_postgres'),
+            # Skip migrations to reduce long-running operations against Supabase.
+            'MIGRATE': os.getenv('DB_TEST_MIGRATE', 'false').strip().lower() in ('1', 'true', 'yes', 'y', 'on'),
+        },
+    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

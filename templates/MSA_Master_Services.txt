@@ -1,0 +1,33 @@
+MASTER SERVICES AGREEMENT (MSA)
+
+This Master Services Agreement ("Agreement") is made effective as of {{effective_date}} ("Effective Date"), by and between:
+
+Client: {{client_name}}
+Service Provider: {{service_provider_name}}
+
+1. Services
+Service Provider will perform services as described in applicable Statements of Work ("SOWs").
+
+2. Fees & Payment Terms
+Unless otherwise stated in an SOW, Client will pay invoices net {{payment_terms_days}} days.
+
+3. Limitation of Liability
+Except for willful misconduct or breach of confidentiality, liability is capped at ${{liability_cap_amount}}.
+
+4. Confidentiality
+Each Party will protect the other Party’s Confidential Information using reasonable care.
+
+5. Governing Law
+This Agreement is governed by the laws of the State of {{governing_law_state}}.
+
+{{clauses_section}}
+
+Signatures
+
+Client: {{client_name}}
+Signature: __________________________
+Date: _______________________________
+
+Service Provider: {{service_provider_name}}
+Signature: __________________________
+Date: _______________________________

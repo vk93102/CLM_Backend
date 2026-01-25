@@ -14,7 +14,12 @@ from .template_views import (
     UserTemplatesView,
     DeleteTemplateView
 )
-from .template_file_views import TemplateFileContentView, TemplateFilesView, TemplateMyFilesView
+from .template_file_views import (
+    TemplateFileContentView,
+    TemplateFileSchemaView,
+    TemplateFilesView,
+    TemplateMyFilesView,
+)
 from .pdf_views import (
     ContractPDFDownloadView,
     ContractBatchPDFGenerationView,
@@ -35,6 +40,7 @@ urlpatterns = [
     path('templates/types/<str:template_type>/', TemplateTypeDetailView.as_view(), name='template-type-detail'),
     path('templates/files/', TemplateFilesView.as_view(), name='template-files-list'),
     path('templates/files/mine/', TemplateMyFilesView.as_view(), name='template-files-mine'),
+    path('templates/files/schema/<str:filename>/', TemplateFileSchemaView.as_view(), name='template-files-schema'),
     path('templates/files/content/<str:filename>/', TemplateFileContentView.as_view(), name='template-files-content'),
     path('templates/summary/', TemplateTypeSummaryView.as_view(), name='template-summary'),
     path('templates/create-from-type/', CreateTemplateFromTypeView.as_view(), name='create-template-from-type'),

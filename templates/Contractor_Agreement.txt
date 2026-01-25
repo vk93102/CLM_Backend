@@ -1,0 +1,30 @@
+CONTRACTOR AGREEMENT
+
+This Contractor Agreement ("Agreement") is entered into as of {{start_date}} between:
+
+Company: {{company_name}}
+Contractor: {{contractor_name}}
+
+1. Services
+Contractor will provide services as agreed by the Parties.
+
+2. Compensation
+Company will pay Contractor ${{compensation_amount}} for the services, subject to agreed invoicing and approval.
+
+3. Term & Termination
+This Agreement begins on {{start_date}} and ends on {{end_date}} unless terminated earlier. Either Party may terminate with {{termination_notice_days}} days written notice.
+
+4. Confidentiality & IP
+Contractor will keep Company information confidential and assign work product to Company as applicable.
+
+{{clauses_section}}
+
+Signatures
+
+Company: {{company_name}}
+Signature: __________________________
+Date: _______________________________
+
+Contractor: {{contractor_name}}
+Signature: __________________________
+Date: _______________________________

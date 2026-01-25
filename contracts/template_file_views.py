@@ -51,6 +51,10 @@ def _infer_template_type(filename: str) -> str:
     name = filename.lower()
     if "nda" in name:
         return "NDA"
+    if "sow" in name or "statement_of_work" in name or "statement-of-work" in name:
+        return "SOW"
+    if "contractor" in name:
+        return "CONTRACTOR_AGREEMENT"
     if "employ" in name:
         return "EMPLOYMENT"
     if "agency" in name:
@@ -290,6 +294,162 @@ class TemplateFileContentView(APIView):
                 "template_type": _infer_template_type(safe),
                 "content": content,
                 "size": os.path.getsize(path),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+US_STATES = [
+    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
+    "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
+    "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi",
+    "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico",
+    "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
+    "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont",
+    "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming",
+]
+
+
+def _extract_placeholders(raw_text: str) -> list[str]:
+    rx = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
+    return sorted({m.group(1).strip() for m in rx.finditer(raw_text) if m.group(1)})
+
+
+def _schema_for_contract_type(contract_type: str) -> list[dict]:
+    ct = (contract_type or "").upper()
+
+    if ct == "NDA":
+        return [
+            {
+                "title": "Party Details",
+                "fields": [
+                    {"key": "disclosing_party_name", "label": "Company Name (Disclosing Party)", "type": "text", "required": True},
+                    {"key": "receiving_party_name", "label": "Counterparty Name (Receiving Party)", "type": "text", "required": True},
+                ],
+            },
+            {
+                "title": "Agreement Terms",
+                "fields": [
+                    {"key": "effective_date", "label": "Effective Date", "type": "date", "required": True},
+                    {"key": "jurisdiction_state", "label": "Jurisdiction State", "type": "select", "required": True, "options": US_STATES},
+                    {"key": "confidentiality_duration_years", "label": "Confidentiality Duration (Years)", "type": "number", "required": True},
+                    {"key": "breach_penalty_amount", "label": "Breach Penalty Amount ($)", "type": "number", "required": False},
+                ],
+            },
+        ]
+
+    if ct == "MSA":
+        return [
+            {
+                "title": "Party Details",
+                "fields": [
+                    {"key": "client_name", "label": "Client Company Name", "type": "text", "required": True},
+                    {"key": "service_provider_name", "label": "Service Provider Name", "type": "text", "required": True},
+                ],
+            },
+            {
+                "title": "Agreement Terms",
+                "fields": [
+                    {"key": "effective_date", "label": "Effective Date", "type": "date", "required": True},
+                    {"key": "governing_law_state", "label": "Governing Law (State)", "type": "select", "required": True, "options": US_STATES},
+                    {"key": "payment_terms_days", "label": "Payment Terms (Days)", "type": "number", "required": False},
+                    {"key": "liability_cap_amount", "label": "Liability Cap Amount ($)", "type": "number", "required": False},
+                ],
+            },
+        ]
+
+    if ct in {"SOW", "STATEMENT_OF_WORK"}:
+        return [
+            {
+                "title": "Party Details",
+                "fields": [
+                    {"key": "client_name", "label": "Client Company Name", "type": "text", "required": True},
+                    {"key": "provider_name", "label": "Provider Name", "type": "text", "required": True},
+                ],
+            },
+            {
+                "title": "Project Terms",
+                "fields": [
+                    {"key": "project_name", "label": "Project Name", "type": "text", "required": True},
+                    {"key": "start_date", "label": "Start Date", "type": "date", "required": True},
+                    {"key": "end_date", "label": "End Date", "type": "date", "required": False},
+                    {"key": "payment_amount", "label": "Payment Amount ($)", "type": "number", "required": False},
+                ],
+            },
+        ]
+
+    if ct in {"CONTRACTOR_AGREEMENT", "EMPLOYMENT"}:
+        return [
+            {
+                "title": "Party Details",
+                "fields": [
+                    {"key": "company_name", "label": "Company Name", "type": "text", "required": True},
+                    {"key": "contractor_name", "label": "Contractor Name", "type": "text", "required": True},
+                ],
+            },
+            {
+                "title": "Engagement Terms",
+                "fields": [
+                    {"key": "start_date", "label": "Start Date", "type": "date", "required": True},
+                    {"key": "end_date", "label": "End Date", "type": "date", "required": False},
+                    {"key": "compensation_amount", "label": "Compensation Amount ($)", "type": "number", "required": False},
+                    {"key": "termination_notice_days", "label": "Termination Notice (Days)", "type": "number", "required": False},
+                ],
+            },
+        ]
+
+    # Default schema: derive from placeholders on the frontend
+    return [
+        {
+            "title": "Data Entry",
+            "fields": [],
+        }
+    ]
+
+
+class TemplateFileSchemaView(APIView):
+    """GET /api/v1/templates/files/schema/<filename>/ -> required fields + clause/constraint UI metadata."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, filename: str):
+        safe = _sanitize_filename(filename)
+        templates_dir = _templates_dir()
+        path = os.path.join(templates_dir, safe)
+
+        if not os.path.exists(path):
+            return Response(
+                {"success": False, "error": "Template file not found", "filename": safe},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        with open(path, "r", encoding="utf-8") as f:
+            raw_text = f.read()
+
+        template_type = _infer_template_type(safe)
+        placeholders = _extract_placeholders(raw_text)
+        sections = _schema_for_contract_type(template_type)
+
+        # Mark which schema fields are actually present in the template as placeholders
+        placeholder_set = set(placeholders)
+        for section in sections:
+            for field in section.get("fields", []):
+                key = field.get("key")
+                field["in_template"] = bool(key and key in placeholder_set)
+
+        return Response(
+            {
+                "success": True,
+                "filename": safe,
+                "name": _display_name_from_filename(safe),
+                "template_type": template_type,
+                "placeholders": placeholders,
+                "sections": sections,
+                "clauses_ui": {
+                    "allow_library_selection": True,
+                    "allow_custom_clauses": True,
+                    "allow_constraints": True,
+                },
             },
             status=status.HTTP_200_OK,
         )

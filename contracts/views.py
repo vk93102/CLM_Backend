@@ -635,6 +635,224 @@ class ContractViewSet(viewsets.ModelViewSet):
             created_by=self.request.user.user_id
         )
 
+    # ---------------------------------------------------------------------
+    # Filesystem-backed template support (no DB templates)
+    # ---------------------------------------------------------------------
+    def _templates_dir(self) -> str:
+        from django.conf import settings
+
+        return os.path.join(settings.BASE_DIR, 'templates')
+
+    def _sanitize_template_filename(self, name: str) -> str:
+        base = os.path.basename(str(name or '')).strip()
+        base = base.replace('\\', '').replace('/', '')
+        base = re.sub(r'[^A-Za-z0-9 _.-]+', '', base)
+        base = re.sub(r'\s+', '_', base).strip('_')
+        if not base.lower().endswith('.txt'):
+            base = f'{base}.txt' if base else 'Template.txt'
+        return base
+
+    def _infer_contract_type_from_filename(self, filename: str) -> str:
+        name = (filename or '').lower()
+        if 'nda' in name:
+            return 'NDA'
+        if 'msa' in name or 'master' in name:
+            return 'MSA'
+        if 'sow' in name or 'statement_of_work' in name or 'statement-of-work' in name:
+            return 'SOW'
+        if 'contractor' in name:
+            return 'CONTRACTOR_AGREEMENT'
+        if 'employ' in name:
+            return 'EMPLOYMENT'
+        if 'agency' in name:
+            return 'AGENCY_AGREEMENT'
+        if 'property' in name:
+            return 'PROPERTY_MANAGEMENT'
+        if 'purchase' in name:
+            return 'PURCHASE_AGREEMENT'
+        return 'SERVICE_AGREEMENT'
+
+    def _render_template_text(self, raw_text: str, values: dict) -> str:
+        rendered = raw_text or ''
+        for key, value in (values or {}).items():
+            placeholder = re.compile(r'\{\{\s*' + re.escape(str(key)) + r'\s*\}\}')
+            rendered = placeholder.sub(str(value) if value is not None else '', rendered)
+        return rendered
+
+    def _assemble_additions_block(self, tenant_id, contract_type: str, selected_clause_ids, custom_clauses, constraints) -> str:
+        selected_clause_ids = selected_clause_ids or []
+        custom_clauses = custom_clauses or []
+        constraints = constraints or []
+
+        blocks = []
+
+        if selected_clause_ids:
+            clause_qs = Clause.objects.filter(
+                tenant_id=tenant_id,
+                status='published',
+                clause_id__in=selected_clause_ids,
+            )
+            if contract_type:
+                clause_qs = clause_qs.filter(contract_type=contract_type)
+
+            clause_map = {c.clause_id: c for c in clause_qs}
+            for cid in selected_clause_ids:
+                clause = clause_map.get(cid)
+                if not clause:
+                    continue
+                name = (clause.name or cid).strip()
+                content = (clause.content or '').strip()
+                if content:
+                    blocks.append(f'{name}\n{content}')
+
+        constraint_lines = []
+        for c in constraints:
+            if not isinstance(c, dict):
+                continue
+            n = (c.get('name') or '').strip()
+            v = (c.get('value') or '').strip()
+            if n and v:
+                constraint_lines.append(f'- {n}: {v}')
+        if constraint_lines:
+            blocks.append('Constraints\n' + '\n'.join(constraint_lines))
+
+        for cc in custom_clauses:
+            if not isinstance(cc, dict):
+                continue
+            title = (cc.get('title') or '').strip() or 'Custom Clause'
+            content = (cc.get('content') or '').strip()
+            if content:
+                blocks.append(f'{title}\n{content}')
+
+        if not blocks:
+            return ''
+
+        return 'ADDITIONAL CLAUSES & CONSTRAINTS\n\n' + ('\n\n'.join(blocks))
+
+    def _apply_additions(self, rendered_text: str, additions_block: str) -> str:
+        if not additions_block:
+            return rendered_text
+
+        out = rendered_text or ''
+        for slot in ('clauses_section', 'clauses', 'constraints_section', 'constraints'):
+            token_rx = re.compile(r'\{\{\s*' + re.escape(slot) + r'\s*\}\}')
+            if token_rx.search(out):
+                return token_rx.sub(additions_block, out)
+
+        return out + '\n\n---\n\n' + additions_block + '\n'
+
+    # ---------------------------------------------------------------------
+    # Filesystem-backed template support (no DB templates)
+    # ---------------------------------------------------------------------
+    def _templates_dir(self) -> str:
+        from django.conf import settings
+
+        return os.path.join(settings.BASE_DIR, 'templates')
+
+    def _sanitize_template_filename(self, name: str) -> str:
+        base = os.path.basename(str(name or '')).strip()
+        base = base.replace('\\', '').replace('/', '')
+        base = re.sub(r'[^A-Za-z0-9 _.-]+', '', base)
+        base = re.sub(r'\s+', '_', base).strip('_')
+        if not base.lower().endswith('.txt'):
+            base = f'{base}.txt' if base else 'Template.txt'
+        return base
+
+    def _infer_contract_type_from_filename(self, filename: str) -> str:
+        name = (filename or '').lower()
+        if 'nda' in name:
+            return 'NDA'
+        if 'msa' in name or 'master' in name:
+            return 'MSA'
+        if 'sow' in name or 'statement_of_work' in name or 'statement-of-work' in name:
+            return 'SOW'
+        if 'contractor' in name:
+            return 'CONTRACTOR_AGREEMENT'
+        if 'employ' in name:
+            return 'EMPLOYMENT'
+        if 'agency' in name:
+            return 'AGENCY_AGREEMENT'
+        if 'property' in name:
+            return 'PROPERTY_MANAGEMENT'
+        if 'purchase' in name:
+            return 'PURCHASE_AGREEMENT'
+        return 'SERVICE_AGREEMENT'
+
+    def _render_template_text(self, raw_text: str, values: dict) -> str:
+        rendered = raw_text or ''
+        for key, value in (values or {}).items():
+            placeholder = re.compile(r'\{\{\s*' + re.escape(str(key)) + r'\s*\}\}')
+            rendered = placeholder.sub(str(value) if value is not None else '', rendered)
+        return rendered
+
+    def _assemble_additions_block(self, tenant_id, contract_type: str, selected_clause_ids, custom_clauses, constraints) -> str:
+        selected_clause_ids = selected_clause_ids or []
+        custom_clauses = custom_clauses or []
+        constraints = constraints or []
+
+        blocks = []
+
+        # Clause library selections
+        if selected_clause_ids:
+            clause_qs = Clause.objects.filter(
+                tenant_id=tenant_id,
+                status='published',
+                clause_id__in=selected_clause_ids,
+            )
+            if contract_type:
+                clause_qs = clause_qs.filter(contract_type=contract_type)
+
+            clause_map = {c.clause_id: c for c in clause_qs}
+            for cid in selected_clause_ids:
+                clause = clause_map.get(cid)
+                if not clause:
+                    continue
+                name = (clause.name or cid).strip()
+                content = (clause.content or '').strip()
+                if content:
+                    blocks.append(f'{name}\n{content}')
+
+        # Constraints
+        constraint_lines = []
+        for c in constraints:
+            if not isinstance(c, dict):
+                continue
+            n = (c.get('name') or '').strip()
+            v = (c.get('value') or '').strip()
+            if n and v:
+                constraint_lines.append(f'- {n}: {v}')
+        if constraint_lines:
+            blocks.append('Constraints\n' + '\n'.join(constraint_lines))
+
+        # Custom clauses
+        for cc in custom_clauses:
+            if not isinstance(cc, dict):
+                continue
+            title = (cc.get('title') or '').strip() or 'Custom Clause'
+            content = (cc.get('content') or '').strip()
+            if content:
+                blocks.append(f'{title}\n{content}')
+
+        if not blocks:
+            return ''
+
+        return 'ADDITIONAL CLAUSES & CONSTRAINTS\n\n' + ('\n\n'.join(blocks))
+
+    def _apply_additions(self, rendered_text: str, additions_block: str) -> str:
+        if not additions_block:
+            return rendered_text
+
+        out = rendered_text or ''
+        # Prefer inserting into an explicit placeholder if present
+        for slot in ('clauses_section', 'clauses', 'constraints_section', 'constraints'):
+            token_rx = re.compile(r'\{\{\s*' + re.escape(slot) + r'\s*\}\}')
+            if token_rx.search(out):
+                return token_rx.sub(additions_block, out)
+
+        # Otherwise append at the end
+        sep = '\n\n' if out.endswith('\n') else '\n\n'
+        return out + sep + '---\n\n' + additions_block + '\n'
+
     def create(self, request, *args, **kwargs):
         """Create contract.
 
@@ -949,6 +1167,311 @@ class ContractViewSet(viewsets.ModelViewSet):
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=False, methods=['post'], url_path='preview-from-file')
+    def preview_from_file(self, request):
+        tenant_id = request.user.tenant_id
+        filename = request.data.get('filename')
+        if not filename:
+            return Response({'error': 'filename is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        structured_inputs = request.data.get('structured_inputs') or {}
+        if not isinstance(structured_inputs, dict):
+            return Response({'error': 'structured_inputs must be an object'}, status=status.HTTP_400_BAD_REQUEST)
+
+        selected_clauses = request.data.get('selected_clauses') or []
+        if selected_clauses is not None and not isinstance(selected_clauses, list):
+            return Response({'error': 'selected_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        custom_clauses = request.data.get('custom_clauses') or []
+        if custom_clauses is not None and not isinstance(custom_clauses, list):
+            return Response({'error': 'custom_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        constraints = request.data.get('constraints') or []
+        if constraints is not None and not isinstance(constraints, list):
+            return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        safe = self._sanitize_template_filename(filename)
+        path = os.path.join(self._templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        with open(path, 'r', encoding='utf-8') as f:
+            raw_text = f.read()
+
+        rendered = self._render_template_text(raw_text, structured_inputs)
+        contract_type = self._infer_contract_type_from_filename(safe)
+        additions = self._assemble_additions_block(tenant_id, contract_type, selected_clauses, custom_clauses, constraints)
+        rendered = self._apply_additions(rendered, additions)
+
+        return Response(
+            {
+                'success': True,
+                'filename': safe,
+                'contract_type': contract_type,
+                'raw_text': raw_text,
+                'rendered_text': rendered,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=['post'], url_path='generate-from-file')
+    def generate_from_file(self, request):
+        tenant_id = request.user.tenant_id
+        user_id = request.user.user_id
+
+        filename = request.data.get('filename')
+        if not filename:
+            return Response({'error': 'filename is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        structured_inputs = request.data.get('structured_inputs') or {}
+        if not isinstance(structured_inputs, dict):
+            return Response({'error': 'structured_inputs must be an object'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_instructions = request.data.get('user_instructions')
+        title = request.data.get('title')
+
+        selected_clauses = request.data.get('selected_clauses') or []
+        if selected_clauses is not None and not isinstance(selected_clauses, list):
+            return Response({'error': 'selected_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        custom_clauses = request.data.get('custom_clauses') or []
+        if custom_clauses is not None and not isinstance(custom_clauses, list):
+            return Response({'error': 'custom_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        constraints = request.data.get('constraints') or []
+        if constraints is not None and not isinstance(constraints, list):
+            return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        safe = self._sanitize_template_filename(filename)
+        path = os.path.join(self._templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        with open(path, 'r', encoding='utf-8') as f:
+            raw_text = f.read()
+
+        rendered = self._render_template_text(raw_text, structured_inputs)
+        inferred_type = self._infer_contract_type_from_filename(safe)
+        additions = self._assemble_additions_block(tenant_id, inferred_type, selected_clauses, custom_clauses, constraints)
+        rendered = self._apply_additions(rendered, additions)
+
+        counterparty = (
+            structured_inputs.get('counterparty')
+            or structured_inputs.get('counterparty_name')
+            or structured_inputs.get('receiving_party_name')
+            or structured_inputs.get('client_name')
+            or structured_inputs.get('provider_name')
+            or structured_inputs.get('contractor_name')
+        )
+
+        clauses_payload = []
+        for cid in selected_clauses or []:
+            if isinstance(cid, str) and cid.strip():
+                clauses_payload.append({'kind': 'library', 'clause_id': cid.strip()})
+        for c in constraints or []:
+            if isinstance(c, dict) and (c.get('name') or '').strip() and (c.get('value') or '').strip():
+                clauses_payload.append({'kind': 'constraint', 'name': (c.get('name') or '').strip(), 'value': (c.get('value') or '').strip()})
+        for c in custom_clauses or []:
+            if isinstance(c, dict) and (c.get('content') or '').strip():
+                clauses_payload.append({'kind': 'custom', 'title': (c.get('title') or 'Custom Clause').strip(), 'content': (c.get('content') or '').strip()})
+
+        with transaction.atomic():
+            contract = Contract.objects.create(
+                tenant_id=tenant_id,
+                created_by=user_id,
+                title=(title or os.path.splitext(safe)[0]),
+                status='draft',
+                contract_type=inferred_type,
+                counterparty=counterparty,
+                form_inputs=structured_inputs,
+                user_instructions=user_instructions,
+                clauses=clauses_payload,
+                metadata={
+                    'template_filename': safe,
+                    'template_source': 'filesystem',
+                    'raw_text': raw_text,
+                    'rendered_text': rendered,
+                },
+            )
+
+            WorkflowLog.objects.create(
+                contract=contract,
+                action='created',
+                performed_by=user_id,
+                comment=f'Created from template file {safe}',
+            )
+
+        return Response(
+            {
+                'contract': ContractDetailSerializer(contract).data,
+                'rendered_text': rendered,
+                'raw_text': raw_text,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=['post'], url_path='preview-from-file')
+    def preview_from_file(self, request):
+        """POST /contracts/preview-from-file/
+
+        Returns rendered text for a filesystem-backed template without saving.
+
+        Request:
+        {
+          "filename": "NDA.txt",
+          "structured_inputs": {...},
+          "selected_clauses": ["CONF-001"],
+          "custom_clauses": [{"title":"...","content":"..."}],
+          "constraints": [{"name":"...","value":"..."}]
+        }
+        """
+
+        tenant_id = request.user.tenant_id
+        filename = request.data.get('filename')
+        if not filename:
+            return Response({'error': 'filename is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        structured_inputs = request.data.get('structured_inputs') or {}
+        if not isinstance(structured_inputs, dict):
+            return Response({'error': 'structured_inputs must be an object'}, status=status.HTTP_400_BAD_REQUEST)
+
+        selected_clauses = request.data.get('selected_clauses') or []
+        if selected_clauses is not None and not isinstance(selected_clauses, list):
+            return Response({'error': 'selected_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        custom_clauses = request.data.get('custom_clauses') or []
+        if custom_clauses is not None and not isinstance(custom_clauses, list):
+            return Response({'error': 'custom_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        constraints = request.data.get('constraints') or []
+        if constraints is not None and not isinstance(constraints, list):
+            return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        safe = self._sanitize_template_filename(filename)
+        path = os.path.join(self._templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        with open(path, 'r', encoding='utf-8') as f:
+            raw_text = f.read()
+
+        rendered = self._render_template_text(raw_text, structured_inputs)
+        contract_type = self._infer_contract_type_from_filename(safe)
+        additions = self._assemble_additions_block(tenant_id, contract_type, selected_clauses, custom_clauses, constraints)
+        rendered = self._apply_additions(rendered, additions)
+
+        return Response(
+            {
+                'success': True,
+                'filename': safe,
+                'contract_type': contract_type,
+                'raw_text': raw_text,
+                'rendered_text': rendered,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=['post'], url_path='generate-from-file')
+    def generate_from_file(self, request):
+        """POST /contracts/generate-from-file/
+
+        Creates a Contract using a filesystem-backed template (.txt).
+        """
+
+        tenant_id = request.user.tenant_id
+        user_id = request.user.user_id
+
+        filename = request.data.get('filename')
+        if not filename:
+            return Response({'error': 'filename is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        structured_inputs = request.data.get('structured_inputs') or {}
+        if not isinstance(structured_inputs, dict):
+            return Response({'error': 'structured_inputs must be an object'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_instructions = request.data.get('user_instructions')
+        title = request.data.get('title')
+
+        selected_clauses = request.data.get('selected_clauses') or []
+        if selected_clauses is not None and not isinstance(selected_clauses, list):
+            return Response({'error': 'selected_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        custom_clauses = request.data.get('custom_clauses') or []
+        if custom_clauses is not None and not isinstance(custom_clauses, list):
+            return Response({'error': 'custom_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        constraints = request.data.get('constraints') or []
+        if constraints is not None and not isinstance(constraints, list):
+            return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        safe = self._sanitize_template_filename(filename)
+        path = os.path.join(self._templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        with open(path, 'r', encoding='utf-8') as f:
+            raw_text = f.read()
+
+        rendered = self._render_template_text(raw_text, structured_inputs)
+        inferred_type = self._infer_contract_type_from_filename(safe)
+        additions = self._assemble_additions_block(tenant_id, inferred_type, selected_clauses, custom_clauses, constraints)
+        rendered = self._apply_additions(rendered, additions)
+
+        counterparty = (
+            structured_inputs.get('counterparty')
+            or structured_inputs.get('counterparty_name')
+            or structured_inputs.get('receiving_party_name')
+            or structured_inputs.get('client_name')
+            or structured_inputs.get('provider_name')
+            or structured_inputs.get('contractor_name')
+        )
+
+        clauses_payload = []
+        for cid in selected_clauses or []:
+            if isinstance(cid, str) and cid.strip():
+                clauses_payload.append({'kind': 'library', 'clause_id': cid.strip()})
+        for c in constraints or []:
+            if isinstance(c, dict) and (c.get('name') or '').strip() and (c.get('value') or '').strip():
+                clauses_payload.append({'kind': 'constraint', 'name': (c.get('name') or '').strip(), 'value': (c.get('value') or '').strip()})
+        for c in custom_clauses or []:
+            if isinstance(c, dict) and (c.get('content') or '').strip():
+                clauses_payload.append({'kind': 'custom', 'title': (c.get('title') or 'Custom Clause').strip(), 'content': (c.get('content') or '').strip()})
+
+        with transaction.atomic():
+            contract = Contract.objects.create(
+                tenant_id=tenant_id,
+                created_by=user_id,
+                title=(title or os.path.splitext(safe)[0]),
+                status='draft',
+                contract_type=inferred_type,
+                counterparty=counterparty,
+                form_inputs=structured_inputs,
+                user_instructions=user_instructions,
+                clauses=clauses_payload,
+                metadata={
+                    'template_filename': safe,
+                    'template_source': 'filesystem',
+                    'raw_text': raw_text,
+                    'rendered_text': rendered,
+                },
+            )
+
+            WorkflowLog.objects.create(
+                contract=contract,
+                action='created',
+                performed_by=user_id,
+                comment=f'Created from template file {safe}',
+            )
+
+        return Response(
+            {
+                'contract': ContractDetailSerializer(contract).data,
+                'rendered_text': rendered,
+                'raw_text': raw_text,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=False, methods=['post'], url_path='generate-from-file')
     def generate_from_file(self, request):
@@ -3351,6 +3874,255 @@ class ContractViewSet(viewsets.ModelViewSet):
         serializer.save(
             tenant_id=self.request.user.tenant_id,
             created_by=self.request.user.user_id
+        )
+
+    # ---------------------------------------------------------------------
+    # Filesystem-backed template support (no DB templates)
+    # ---------------------------------------------------------------------
+    def _templates_dir(self) -> str:
+        from django.conf import settings
+
+        return os.path.join(settings.BASE_DIR, 'templates')
+
+    def _sanitize_template_filename(self, name: str) -> str:
+        base = os.path.basename(str(name or '')).strip()
+        base = base.replace('\\', '').replace('/', '')
+        base = re.sub(r'[^A-Za-z0-9 _.-]+', '', base)
+        base = re.sub(r'\s+', '_', base).strip('_')
+        if not base.lower().endswith('.txt'):
+            base = f'{base}.txt' if base else 'Template.txt'
+        return base
+
+    def _infer_contract_type_from_filename(self, filename: str) -> str:
+        name = (filename or '').lower()
+        if 'nda' in name:
+            return 'NDA'
+        if 'msa' in name or 'master' in name:
+            return 'MSA'
+        if 'sow' in name or 'statement_of_work' in name or 'statement-of-work' in name:
+            return 'SOW'
+        if 'contractor' in name:
+            return 'CONTRACTOR_AGREEMENT'
+        if 'employ' in name:
+            return 'EMPLOYMENT'
+        if 'agency' in name:
+            return 'AGENCY_AGREEMENT'
+        if 'property' in name:
+            return 'PROPERTY_MANAGEMENT'
+        if 'purchase' in name:
+            return 'PURCHASE_AGREEMENT'
+        return 'SERVICE_AGREEMENT'
+
+    def _render_template_text(self, raw_text: str, values: dict) -> str:
+        rendered = raw_text or ''
+        for key, value in (values or {}).items():
+            placeholder = re.compile(r'\{\{\s*' + re.escape(str(key)) + r'\s*\}\}')
+            rendered = placeholder.sub(str(value) if value is not None else '', rendered)
+        return rendered
+
+    def _assemble_additions_block(self, tenant_id, contract_type: str, selected_clause_ids, custom_clauses, constraints) -> str:
+        selected_clause_ids = selected_clause_ids or []
+        custom_clauses = custom_clauses or []
+        constraints = constraints or []
+
+        blocks = []
+
+        if selected_clause_ids:
+            clause_qs = Clause.objects.filter(
+                tenant_id=tenant_id,
+                status='published',
+                clause_id__in=selected_clause_ids,
+            )
+            if contract_type:
+                clause_qs = clause_qs.filter(contract_type=contract_type)
+
+            clause_map = {c.clause_id: c for c in clause_qs}
+            for cid in selected_clause_ids:
+                clause = clause_map.get(cid)
+                if not clause:
+                    continue
+                name = (clause.name or cid).strip()
+                content = (clause.content or '').strip()
+                if content:
+                    blocks.append(f'{name}\n{content}')
+
+        constraint_lines = []
+        for c in constraints:
+            if not isinstance(c, dict):
+                continue
+            n = (c.get('name') or '').strip()
+            v = (c.get('value') or '').strip()
+            if n and v:
+                constraint_lines.append(f'- {n}: {v}')
+        if constraint_lines:
+            blocks.append('Constraints\n' + '\n'.join(constraint_lines))
+
+        for cc in custom_clauses:
+            if not isinstance(cc, dict):
+                continue
+            title = (cc.get('title') or '').strip() or 'Custom Clause'
+            content = (cc.get('content') or '').strip()
+            if content:
+                blocks.append(f'{title}\n{content}')
+
+        if not blocks:
+            return ''
+
+        return 'ADDITIONAL CLAUSES & CONSTRAINTS\n\n' + ('\n\n'.join(blocks))
+
+    def _apply_additions(self, rendered_text: str, additions_block: str) -> str:
+        if not additions_block:
+            return rendered_text
+
+        out = rendered_text or ''
+        for slot in ('clauses_section', 'clauses', 'constraints_section', 'constraints'):
+            token_rx = re.compile(r'\{\{\s*' + re.escape(slot) + r'\s*\}\}')
+            if token_rx.search(out):
+                return token_rx.sub(additions_block, out)
+
+        return out + '\n\n---\n\n' + additions_block + '\n'
+
+    @action(detail=False, methods=['post'], url_path='preview-from-file')
+    def preview_from_file(self, request):
+        tenant_id = request.user.tenant_id
+        filename = request.data.get('filename')
+        if not filename:
+            return Response({'error': 'filename is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        structured_inputs = request.data.get('structured_inputs') or {}
+        if not isinstance(structured_inputs, dict):
+            return Response({'error': 'structured_inputs must be an object'}, status=status.HTTP_400_BAD_REQUEST)
+
+        selected_clauses = request.data.get('selected_clauses') or []
+        if selected_clauses is not None and not isinstance(selected_clauses, list):
+            return Response({'error': 'selected_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        custom_clauses = request.data.get('custom_clauses') or []
+        if custom_clauses is not None and not isinstance(custom_clauses, list):
+            return Response({'error': 'custom_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        constraints = request.data.get('constraints') or []
+        if constraints is not None and not isinstance(constraints, list):
+            return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        safe = self._sanitize_template_filename(filename)
+        path = os.path.join(self._templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        with open(path, 'r', encoding='utf-8') as f:
+            raw_text = f.read()
+
+        rendered = self._render_template_text(raw_text, structured_inputs)
+        contract_type = self._infer_contract_type_from_filename(safe)
+        additions = self._assemble_additions_block(tenant_id, contract_type, selected_clauses, custom_clauses, constraints)
+        rendered = self._apply_additions(rendered, additions)
+
+        return Response(
+            {
+                'success': True,
+                'filename': safe,
+                'contract_type': contract_type,
+                'raw_text': raw_text,
+                'rendered_text': rendered,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=['post'], url_path='generate-from-file')
+    def generate_from_file(self, request):
+        tenant_id = request.user.tenant_id
+        user_id = request.user.user_id
+
+        filename = request.data.get('filename')
+        if not filename:
+            return Response({'error': 'filename is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        structured_inputs = request.data.get('structured_inputs') or {}
+        if not isinstance(structured_inputs, dict):
+            return Response({'error': 'structured_inputs must be an object'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_instructions = request.data.get('user_instructions')
+        title = request.data.get('title')
+
+        selected_clauses = request.data.get('selected_clauses') or []
+        if selected_clauses is not None and not isinstance(selected_clauses, list):
+            return Response({'error': 'selected_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        custom_clauses = request.data.get('custom_clauses') or []
+        if custom_clauses is not None and not isinstance(custom_clauses, list):
+            return Response({'error': 'custom_clauses must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        constraints = request.data.get('constraints') or []
+        if constraints is not None and not isinstance(constraints, list):
+            return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        safe = self._sanitize_template_filename(filename)
+        path = os.path.join(self._templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        with open(path, 'r', encoding='utf-8') as f:
+            raw_text = f.read()
+
+        rendered = self._render_template_text(raw_text, structured_inputs)
+        inferred_type = self._infer_contract_type_from_filename(safe)
+        additions = self._assemble_additions_block(tenant_id, inferred_type, selected_clauses, custom_clauses, constraints)
+        rendered = self._apply_additions(rendered, additions)
+
+        counterparty = (
+            structured_inputs.get('counterparty')
+            or structured_inputs.get('counterparty_name')
+            or structured_inputs.get('receiving_party_name')
+            or structured_inputs.get('client_name')
+            or structured_inputs.get('provider_name')
+            or structured_inputs.get('contractor_name')
+        )
+
+        clauses_payload = []
+        for cid in selected_clauses or []:
+            if isinstance(cid, str) and cid.strip():
+                clauses_payload.append({'kind': 'library', 'clause_id': cid.strip()})
+        for c in constraints or []:
+            if isinstance(c, dict) and (c.get('name') or '').strip() and (c.get('value') or '').strip():
+                clauses_payload.append({'kind': 'constraint', 'name': (c.get('name') or '').strip(), 'value': (c.get('value') or '').strip()})
+        for c in custom_clauses or []:
+            if isinstance(c, dict) and (c.get('content') or '').strip():
+                clauses_payload.append({'kind': 'custom', 'title': (c.get('title') or 'Custom Clause').strip(), 'content': (c.get('content') or '').strip()})
+
+        with transaction.atomic():
+            contract = Contract.objects.create(
+                tenant_id=tenant_id,
+                created_by=user_id,
+                title=(title or os.path.splitext(safe)[0]),
+                status='draft',
+                contract_type=inferred_type,
+                counterparty=counterparty,
+                form_inputs=structured_inputs,
+                user_instructions=user_instructions,
+                clauses=clauses_payload,
+                metadata={
+                    'template_filename': safe,
+                    'template_source': 'filesystem',
+                    'raw_text': raw_text,
+                    'rendered_text': rendered,
+                },
+            )
+
+            WorkflowLog.objects.create(
+                contract=contract,
+                action='created',
+                performed_by=user_id,
+                comment=f'Created from template file {safe}',
+            )
+
+        return Response(
+            {
+                'contract': ContractDetailSerializer(contract).data,
+                'rendered_text': rendered,
+                'raw_text': raw_text,
+            },
+            status=status.HTTP_201_CREATED,
         )
 
     def create(self, request, *args, **kwargs):

@@ -1,0 +1,36 @@
+MUTUAL NON-DISCLOSURE AGREEMENT
+
+This Mutual Non-Disclosure Agreement (the "Agreement") is entered into as of {{effective_date}} (the "Effective Date"), by and between:
+
+Disclosing Party ("Party A"): {{disclosing_party_name}}
+Receiving Party ("Party B"): {{receiving_party_name}}
+
+1. Purpose
+The Parties wish to evaluate a potential business relationship and may disclose Confidential Information to one another.
+
+2. Definition of Confidential Information
+"Confidential Information" means any non-public information disclosed by either Party, including business, technical, financial, and operational information.
+
+3. Obligations
+Each Party agrees to (a) keep Confidential Information confidential, (b) use it only for the Purpose, and (c) disclose it only to personnel with a need to know.
+
+4. Term
+This Agreement remains effective for {{confidentiality_duration_years}} years from the Effective Date.
+
+5. Breach & Remedies
+If a breach occurs, the non-breaching Party may seek injunctive relief and other remedies available at law. If applicable, a liquidated damages amount of ${{breach_penalty_amount}} may be applied.
+
+6. Governing Law
+This Agreement is governed by the laws of the State of {{jurisdiction_state}}.
+
+{{clauses_section}}
+
+Signatures
+
+Party A: {{disclosing_party_name}}
+Signature: __________________________
+Date: _______________________________
+
+Party B: {{receiving_party_name}}
+Signature: __________________________
+Date: _______________________________
