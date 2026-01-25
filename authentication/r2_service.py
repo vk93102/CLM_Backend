@@ -7,6 +7,8 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 import uuid
 import mimetypes
+import re
+from typing import Any, Dict, List, Optional
 
 
 class R2StorageService:
@@ -64,6 +66,65 @@ class R2StorageService:
             return r2_key
         except ClientError as e:
             raise Exception(f"Failed to upload file to R2: {str(e)}")
+
+    @staticmethod
+    def sanitize_filename(filename: str) -> str:
+        name = (filename or '').strip()
+        name = name.replace('\\', '').replace('/', '')
+        name = re.sub(r'[^A-Za-z0-9._ -]+', '', name)
+        name = re.sub(r'\s+', '_', name).strip('_')
+        return name or f"file_{uuid.uuid4()}"
+
+    def upload_private_file(self, file_obj, tenant_id: str, user_id: str, filename: Optional[str] = None) -> Dict[str, Any]:
+        """Upload a private file under a per-user prefix.
+
+        Storage is R2-only. No local filesystem writes.
+        """
+        original_name = filename or getattr(file_obj, 'name', '') or 'upload'
+        safe_name = self.sanitize_filename(original_name)
+        ext = safe_name.split('.')[-1].lower() if '.' in safe_name else ''
+        unique_id = str(uuid.uuid4())
+        r2_key = f"{tenant_id}/private_uploads/{user_id}/{unique_id}--{safe_name}"
+
+        content_type, _ = mimetypes.guess_type(safe_name)
+        if not content_type:
+            content_type = 'application/octet-stream'
+
+        self.client.put_object(
+            Bucket=self.bucket_name,
+            Key=r2_key,
+            Body=file_obj.read(),
+            ContentType=content_type,
+            Metadata={
+                'tenant_id': str(tenant_id),
+                'user_id': str(user_id),
+                'original_filename': original_name,
+            },
+        )
+
+        return {
+            'key': r2_key,
+            'filename': safe_name,
+            'content_type': content_type,
+        }
+
+    def list_objects(self, prefix: str, max_keys: int = 200) -> List[Dict[str, Any]]:
+        """List objects under a prefix."""
+        try:
+            resp = self.client.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix, MaxKeys=max_keys)
+            contents = resp.get('Contents') or []
+            results: List[Dict[str, Any]] = []
+            for obj in contents:
+                results.append(
+                    {
+                        'key': obj.get('Key'),
+                        'size': int(obj.get('Size') or 0),
+                        'last_modified': obj.get('LastModified').isoformat() if obj.get('LastModified') else None,
+                    }
+                )
+            return results
+        except ClientError as e:
+            raise Exception(f"Failed to list objects: {str(e)}")
     
     def generate_presigned_url(self, r2_key, expiration=3600):
         """
