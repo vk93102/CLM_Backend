@@ -3961,7 +3961,7 @@ class ClauseViewSet(viewsets.ModelViewSet):
         return Response({'suggestions': suggestions})
 
 
-class ContractViewSet(viewsets.ModelViewSet):
+class ContractViewSetLegacy(viewsets.ModelViewSet):
     """
     API endpoint for contracts with generation, approval, and version management
     """
