@@ -20,6 +20,8 @@ from .template_file_views import (
     TemplateFileSchemaView,
     TemplateFilesView,
     TemplateMyFilesView,
+    TemplateFileSignatureFieldsConfigView,
+    TemplateFileDragSignaturePositionsView,
 )
 from .pdf_views import (
     ContractPDFDownloadView,
@@ -41,6 +43,8 @@ urlpatterns = [
     path('templates/files/mine/', TemplateMyFilesView.as_view(), name='template-files-mine'),
     path('templates/files/schema/<str:filename>/', TemplateFileSchemaView.as_view(), name='template-files-schema'),
     path('templates/files/content/<str:filename>/', TemplateFileContentView.as_view(), name='template-files-content'),
+    path('templates/files/signature-fields-config/<str:filename>/', TemplateFileSignatureFieldsConfigView.as_view(), name='template-files-signature-fields-config'),
+    path('templates/files/drag-signature-positions/<str:filename>/', TemplateFileDragSignaturePositionsView.as_view(), name='template-files-drag-signature-positions'),
     path('templates/summary/', TemplateTypeSummaryView.as_view(), name='template-summary'),
     path('templates/create-from-type/', CreateTemplateFromTypeView.as_view(), name='create-template-from-type'),
     path('templates/validate/', ValidateTemplateDataView.as_view(), name='validate-template-data'),

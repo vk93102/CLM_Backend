@@ -299,6 +299,208 @@ class TemplateFileContentView(APIView):
         )
 
 
+def _default_signature_fields_config() -> dict:
+    return {
+        "fields": [
+            {
+                "label": "Primary Signature",
+                "type": "signature",
+                "page_number": 1,
+                "position": {"x": 10, "y": 80, "width": 30, "height": 8},
+                "required": True,
+                "recipient_index": 0,
+            }
+        ],
+        "auto_stack": True,
+        "stack_spacing": 12,
+        "source": "default",
+    }
+
+
+def _validate_signature_fields_config(cfg: dict) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(cfg, dict):
+        return ["Configuration must be a JSON object"]
+
+    fields = cfg.get("fields", [])
+    if not isinstance(fields, list):
+        return ["fields must be an array"]
+
+    for idx, field in enumerate(fields):
+        if not isinstance(field, dict):
+            errors.append(f"Field {idx}: must be an object")
+            continue
+
+        if field.get("type") != "signature":
+            errors.append(f"Field {idx}: type must be 'signature'")
+
+        try:
+            page_num = int(field.get("page_number") or 1)
+            if page_num < 1:
+                errors.append(f"Field {idx}: page_number must be >= 1")
+        except (ValueError, TypeError):
+            errors.append(f"Field {idx}: page_number must be an integer")
+
+        try:
+            recipient_index = int(field.get("recipient_index"))
+            if recipient_index < 0:
+                errors.append(f"Field {idx}: recipient_index must be >= 0")
+        except (ValueError, TypeError):
+            errors.append(f"Field {idx}: recipient_index must be an integer")
+
+        position = field.get("position")
+        if not isinstance(position, dict):
+            errors.append(f"Field {idx}: position is required and must be an object")
+            continue
+
+        for coord in ["x", "y", "width", "height"]:
+            if coord not in position:
+                errors.append(f"Field {idx}: position.{coord} is required")
+                continue
+            try:
+                val = float(position[coord])
+                if not (0 <= val <= 100):
+                    errors.append(f"Field {idx}: position.{coord} must be between 0 and 100")
+            except (ValueError, TypeError):
+                errors.append(f"Field {idx}: position.{coord} must be a number")
+
+    return errors
+
+
+class TemplateFileSignatureFieldsConfigView(APIView):
+    """Get/update Firma signature field configuration stored in template meta.
+
+    GET  /api/v1/templates/files/signature-fields-config/<filename>/
+    PUT  /api/v1/templates/files/signature-fields-config/<filename>/
+
+    Stored in: <template>.meta.json -> signature_fields_config
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, filename: str):
+        safe = _sanitize_filename(filename)
+        path = os.path.join(_templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({"success": False, "error": "Template file not found", "filename": safe}, status=404)
+
+        meta = _read_template_meta(path)
+        cfg = meta.get("signature_fields_config")
+        if not isinstance(cfg, dict) or not isinstance(cfg.get("fields"), list):
+            cfg = _default_signature_fields_config()
+            source = "default"
+        else:
+            source = "template_meta"
+
+        return Response(
+            {
+                "success": True,
+                "filename": safe,
+                "config": cfg,
+                "source": source,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def put(self, request, filename: str):
+        safe = _sanitize_filename(filename)
+        path = os.path.join(_templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({"success": False, "error": "Template file not found", "filename": safe}, status=404)
+
+        cfg = request.data
+        errors = _validate_signature_fields_config(cfg)
+        if errors:
+            return Response({"success": False, "error": "Invalid configuration", "validation_errors": errors}, status=400)
+
+        meta = _read_template_meta(path)
+        meta["signature_fields_config"] = {
+            "fields": cfg.get("fields", []),
+            "auto_stack": bool(cfg.get("auto_stack", True)),
+            "stack_spacing": int(cfg.get("stack_spacing", 12)),
+            "source": "template_editor",
+        }
+        meta["signature_fields_updated_at"] = timezone.now().isoformat()
+        meta["signature_fields_updated_by_id"] = str(getattr(request.user, "user_id", "") or "") or None
+        meta["signature_fields_updated_by_email"] = getattr(request.user, "email", None)
+
+        _write_template_meta(path, meta)
+
+        return Response(
+            {"success": True, "filename": safe, "config": meta["signature_fields_config"]},
+            status=status.HTTP_200_OK,
+        )
+
+
+class TemplateFileDragSignaturePositionsView(APIView):
+    """Save signature positions from drag-and-drop UI into template meta.
+
+    POST /api/v1/templates/files/drag-signature-positions/<filename>/
+    Body: {"positions": [{"recipient_index":0,"page_number":1,"position":{"x":10,"y":80,"width":30,"height":8}}]}
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, filename: str):
+        safe = _sanitize_filename(filename)
+        path = os.path.join(_templates_dir(), safe)
+        if not os.path.exists(path):
+            return Response({"success": False, "error": "Template file not found", "filename": safe}, status=404)
+
+        positions = request.data.get("positions", [])
+        if not isinstance(positions, list):
+            return Response({"success": False, "error": "positions must be an array"}, status=400)
+
+        fields = []
+        for idx, pos_data in enumerate(positions):
+            if not isinstance(pos_data, dict):
+                return Response({"success": False, "error": f"Position {idx}: must be an object"}, status=400)
+            if "recipient_index" not in pos_data:
+                return Response({"success": False, "error": f"Position {idx}: recipient_index is required"}, status=400)
+            if "page_number" not in pos_data:
+                return Response({"success": False, "error": f"Position {idx}: page_number is required"}, status=400)
+            if "position" not in pos_data or not isinstance(pos_data.get("position"), dict):
+                return Response({"success": False, "error": f"Position {idx}: position must be an object"}, status=400)
+
+            pos = pos_data["position"]
+            for key in ["x", "y", "width", "height"]:
+                if key not in pos:
+                    return Response({"success": False, "error": f"Position {idx}: position.{key} is required"}, status=400)
+                if not isinstance(pos[key], (int, float)):
+                    return Response({"success": False, "error": f"Position {idx}: position.{key} must be a number"}, status=400)
+
+            try:
+                recipient_index = int(pos_data["recipient_index"])
+                page_number = int(pos_data["page_number"])
+            except (ValueError, TypeError):
+                return Response({"success": False, "error": f"Position {idx}: recipient_index/page_number must be integers"}, status=400)
+
+            fields.append(
+                {
+                    "label": f"Signature {recipient_index + 1}",
+                    "type": "signature",
+                    "page_number": page_number,
+                    "position": {"x": float(pos["x"]), "y": float(pos["y"]), "width": float(pos["width"]), "height": float(pos["height"])},
+                    "required": True,
+                    "recipient_index": recipient_index,
+                }
+            )
+
+        cfg = {"fields": fields, "auto_stack": False, "source": "drag_drop_ui", "stack_spacing": 12}
+        errors = _validate_signature_fields_config(cfg)
+        if errors:
+            return Response({"success": False, "error": "Invalid positions", "validation_errors": errors}, status=400)
+
+        meta = _read_template_meta(path)
+        meta["signature_fields_config"] = cfg
+        meta["signature_fields_updated_at"] = timezone.now().isoformat()
+        meta["signature_fields_updated_by_id"] = str(getattr(request.user, "user_id", "") or "") or None
+        meta["signature_fields_updated_by_email"] = getattr(request.user, "email", None)
+        _write_template_meta(path, meta)
+
+        return Response({"success": True, "filename": safe, "fields_count": len(fields), "config": cfg}, status=status.HTTP_200_OK)
+
+
 US_STATES = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
     "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
