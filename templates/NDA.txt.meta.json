@@ -6,20 +6,33 @@
         "type": "signature",
         "page_number": 2,
         "position": {
-          "x": 30.57032927072459,
-          "y": 38.67730443776119,
+          "x": 60.589449729615595,
+          "y": 38.8250149252058,
           "width": 30.0,
           "height": 7.9696394686907
         },
         "required": true,
         "recipient_index": 0
+      },
+      {
+        "label": "Signature 2",
+        "type": "signature",
+        "page_number": 2,
+        "position": {
+          "x": 2.48565965583174,
+          "y": 38.96668282851157,
+          "width": 30.0,
+          "height": 8.0
+        },
+        "required": true,
+        "recipient_index": 1
       }
     ],
     "auto_stack": false,
     "source": "drag_drop_ui",
     "stack_spacing": 12
   },
-  "signature_fields_updated_at": "2026-02-08T10:43:10.903160+00:00",
+  "signature_fields_updated_at": "2026-02-08T13:01:31.006232+00:00",
   "signature_fields_updated_by_id": "f5cb3c30-ac0c-4075-bef8-0e9f5c097b0d",
   "signature_fields_updated_by_email": "suhaib996886@gmail.com"
 }

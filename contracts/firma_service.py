@@ -313,7 +313,7 @@ class FirmaAPIService:
                 'id': document_id,
                 'status': 'completed' if self.config.mock_auto_complete else 'sent',
                 'is_completed': self.config.mock_auto_complete,
-                'signers': [],
+                'recipients': [],
             }
 
         url = self._url(self.config.status_path.format(document_id=document_id))
@@ -326,6 +326,16 @@ class FirmaAPIService:
         status_value = status_data.get('status')
 
         recipients = status_data.get('recipients') or []
+        # Some Firma environments don't include recipient statuses on the signing-request
+        # object. Fall back to the dedicated users endpoint when needed.
+        if not recipients:
+            try:
+                users = self.get_signing_request_users(document_id)
+                if isinstance(users, list) and users:
+                    recipients = users
+            except Exception:
+                # Best-effort only.
+                pass
 
         # Determine completion.
         # Vendor may not return recipients here; prefer status flags when available.
@@ -337,7 +347,11 @@ class FirmaAPIService:
             if vendor_status_str in {'finished', 'completed', 'complete', 'signed'}:
                 is_completed = True
             elif recipients:
-                signed_count = sum(1 for r in recipients if str(r.get('status') or '').lower() in {'completed', 'finished'})
+                signed_count = sum(
+                    1
+                    for r in recipients
+                    if str(r.get('status') or '').lower() in {'completed', 'finished', 'signed', 'complete'}
+                )
                 total_count = len(recipients)
                 is_completed = signed_count == total_count and total_count > 0
 
@@ -401,6 +415,50 @@ class FirmaAPIService:
             'completed_at': status_data.get('completed_at') or status_data.get('date_finished'),
             'expires_at': status_data.get('expires_at'),
         }
+
+    def get_signing_request_users(self, document_id: str) -> List[Dict[str, Any]]:
+        """Fetch per-recipient/user status list for a signing request.
+
+        Firma's API may expose recipient state via a dedicated `/users` endpoint.
+        We normalize the response to a list of dicts with at least {email, status}.
+        """
+        if self.config.mock_mode:
+            return []
+
+        url = self._url(self.config.users_path.format(document_id=document_id))
+        resp = self._request('GET', url)
+        data = resp.json()
+
+        # Vendor responses vary: could be a list or an object wrapper.
+        if isinstance(data, list):
+            items = data
+        elif isinstance(data, dict):
+            items = data.get('users') or data.get('recipients') or data.get('results') or []
+        else:
+            items = []
+
+        normalized: List[Dict[str, Any]] = []
+        if not isinstance(items, list):
+            return normalized
+
+        for row in items:
+            if not isinstance(row, dict):
+                continue
+            email = str(row.get('email') or row.get('user_email') or '').strip()
+            status = row.get('status') or row.get('state')
+            signed_at = row.get('signed_at') or row.get('completed_at') or row.get('signed_on') or row.get('completed_on')
+            if not email:
+                continue
+            normalized.append(
+                {
+                    **row,
+                    'email': email,
+                    'status': status,
+                    'signed_at': signed_at,
+                }
+            )
+
+        return normalized
 
     def _download_presigned_pdf(self, presigned_url: str) -> bytes:
         """Download a PDF from a pre-signed URL.

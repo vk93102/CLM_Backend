@@ -692,7 +692,18 @@ def _sync_signers_from_recipients(*, record: FirmaSignatureContract, recipients:
        if not vendor:
            continue
 
+       old_status = signer.status
+       old_has_signed = bool(signer.has_signed)
+       old_signed_at = signer.signed_at
+       old_declined_reason = signer.declined_reason
+
        vendor_status = str(vendor.get('status') or '').strip().lower()
+       vendor_reason = (
+           vendor.get('declined_reason')
+           or vendor.get('rejection_reason')
+           or vendor.get('reason')
+           or vendor.get('message')
+       )
        vendor_signed_at = (
            vendor.get('signed_at')
            or vendor.get('completed_at')
@@ -716,6 +727,10 @@ def _sync_signers_from_recipients(*, record: FirmaSignatureContract, recipients:
            elif not signer.signed_at:
                signer.signed_at = now
                update_fields.append('signed_at')
+           # Clear any prior decline metadata if they ended up signing.
+           if signer.declined_reason:
+               signer.declined_reason = None
+               update_fields.append('declined_reason')
        elif vendor_status in ('declined', 'rejected', 'refused'):
            if signer.status != 'declined':
                signer.status = 'declined'
@@ -723,6 +738,17 @@ def _sync_signers_from_recipients(*, record: FirmaSignatureContract, recipients:
            if signer.has_signed:
                signer.has_signed = False
                update_fields.append('has_signed')
+           if isinstance(vendor_reason, str) and vendor_reason.strip() and signer.declined_reason != vendor_reason.strip():
+               signer.declined_reason = vendor_reason.strip()
+               update_fields.append('declined_reason')
+       elif vendor_status in ('in_progress', 'in progress'):
+           if signer.status != 'in_progress':
+               signer.status = 'in_progress'
+               update_fields.append('status')
+       elif vendor_status in ('viewed', 'opened'):
+           if signer.status != 'viewed':
+               signer.status = 'viewed'
+               update_fields.append('status')
        elif vendor_status:
            # Keep local status for unknown vendor values, but at least record invited state.
            if signer.status in (None, '', 'invited'):
@@ -732,6 +758,33 @@ def _sync_signers_from_recipients(*, record: FirmaSignatureContract, recipients:
        if update_fields:
            update_fields.append('updated_at')
            signer.save(update_fields=update_fields)
+
+           # Add a signer-specific audit record when something meaningful changed.
+           try:
+               new_status = signer.status
+               new_has_signed = bool(signer.has_signed)
+               new_signed_at = signer.signed_at
+               new_reason = signer.declined_reason
+
+               status_changed = (old_status != new_status) or (old_has_signed != new_has_signed)
+               meta_changed = (old_signed_at != new_signed_at) or (old_declined_reason != new_reason)
+               if status_changed or meta_changed:
+                   msg = f"Signer {signer.email} status {old_status} -> {new_status}"
+                   if new_status == 'signed' and new_signed_at:
+                       msg += f" at {new_signed_at.isoformat()}"
+                   if new_status == 'declined' and new_reason:
+                       msg += f" (reason: {new_reason})"
+                   FirmaSigningAuditLog.objects.create(
+                       firma_signature_contract=record,
+                       signer=signer,
+                       event='signer_status',
+                       message=msg,
+                       old_status=old_status,
+                       new_status=new_status,
+                       firma_response={'vendor_recipient': vendor},
+                   )
+           except Exception:
+               pass
 
    total = record.signers.count()
    signed = record.signers.filter(has_signed=True).count()
@@ -1460,9 +1513,12 @@ def firma_check_status(request, contract_id: str):
                {
                    'email': s.email,
                    'name': s.name,
+                   'signing_order': getattr(s, 'signing_order', None),
                    'status': s.status,
                    'signed_at': s.signed_at.isoformat() if s.signed_at else None,
                    'has_signed': s.has_signed,
+                   'declined_reason': getattr(s, 'declined_reason', None),
+                   'status_updated_at': s.updated_at.isoformat() if getattr(s, 'updated_at', None) else None,
                }
            )
 
@@ -1501,9 +1557,12 @@ def firma_check_status(request, contract_id: str):
                {
                    'email': s.email,
                    'name': s.name,
+                   'signing_order': getattr(s, 'signing_order', None),
                    'status': s.status,
                    'signed_at': s.signed_at.isoformat() if s.signed_at else None,
                    'has_signed': s.has_signed,
+                   'declined_reason': getattr(s, 'declined_reason', None),
+                   'status_updated_at': s.updated_at.isoformat() if getattr(s, 'updated_at', None) else None,
                }
            )
        return Response(
