@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime
 from datetime import timedelta
 
 from django.db.models import Count
 from django.db.models.functions import TruncDay
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -12,7 +14,7 @@ from rest_framework.views import APIView
 from audit_logs.models import AuditLogModel
 from ai.models import DraftGenerationTask
 from calendar_events.models import CalendarEvent
-from contracts.models import Contract, ESignatureContract, FirmaSignatureContract
+from contracts.models import Contract, ContractTemplate, ESignatureContract, FirmaSignatureContract, TemplateFile
 from reviews.models import ReviewContract
 
 
@@ -40,17 +42,67 @@ class DashboardInsightsView(APIView):
             created_at__gte=since_30d,
         ).count()
 
-        upload_count_30d = 0
+        def _count_r2_objects_since(*, prefix: str, since_dt, max_keys: int = 2000) -> int:
+            try:
+                from authentication.r2_service import R2StorageService
+
+                r2 = R2StorageService()
+                objects = r2.list_objects(prefix=prefix, max_keys=max_keys)
+                n = 0
+                for obj in objects:
+                    lm = obj.get('last_modified')
+                    if not lm:
+                        continue
+                    try:
+                        dt = datetime.fromisoformat(str(lm))
+                    except Exception:
+                        continue
+                    if timezone.is_naive(dt):
+                        dt = timezone.make_aware(dt, timezone=timezone.utc)
+                    if dt >= since_dt:
+                        n += 1
+                return int(n)
+            except Exception:
+                return 0
+
+        repository_upload_count_30d = 0
+        private_upload_count_30d = 0
+        contracts_r2_upload_count_30d = 0
+
+        # Repository (DB-backed) uploads
         try:
             from repository.models import Document
 
-            upload_count_30d = Document.objects.filter(
+            repository_upload_count_30d = Document.objects.filter(
                 tenant_id=tenant_id,
                 uploaded_by_id=user_id,
                 uploaded_at__gte=since_30d,
             ).count()
         except Exception:
-            upload_count_30d = 0
+            repository_upload_count_30d = 0
+
+        # Private uploads (R2-only, per-user prefix).
+        private_prefix = f"{str(tenant_id)}/private_uploads/{str(user_id)}/"
+        private_upload_count_30d = _count_r2_objects_since(prefix=private_prefix, since_dt=since_30d)
+
+        # Generic contract uploads (R2-only, tenant-wide prefix) used by legacy upload endpoints.
+        contracts_prefix = f"{str(tenant_id)}/contracts/"
+        contracts_r2_upload_count_30d = _count_r2_objects_since(prefix=contracts_prefix, since_dt=since_30d)
+
+        upload_count_30d = int(repository_upload_count_30d) + int(private_upload_count_30d) + int(contracts_r2_upload_count_30d)
+
+        # Templates: include both DB-backed template files and contract templates.
+        template_files_count = TemplateFile.objects.filter(
+            Q(tenant_id=tenant_id) | Q(tenant_id__isnull=True),
+            status='active',
+        ).count()
+
+        contract_templates_count = ContractTemplate.objects.filter(
+            tenant_id=tenant_id,
+            status='published',
+        ).count()
+
+        templates_count = int(template_files_count) + int(contract_templates_count)
 
         # -------------------- Feature usage (Audit logs) --------------------
         feature_rows = (
@@ -156,12 +208,22 @@ class DashboardInsightsView(APIView):
         ]
 
         # -------------------- Calendar stats --------------------
-        upcoming_end = now + timedelta(days=30)
+        upcoming_end_30d = now + timedelta(days=30)
+        upcoming_end_365d = now + timedelta(days=365)
+
+        # Overlap filter: event intersects [now, end)
         upcoming_30d = CalendarEvent.objects.filter(
             tenant_id=tenant_id,
             created_by=user_id,
-            start_datetime__gte=now,
-            start_datetime__lte=upcoming_end,
+            start_datetime__lt=upcoming_end_30d,
+            end_datetime__gte=now,
+        ).count()
+
+        upcoming_365d = CalendarEvent.objects.filter(
+            tenant_id=tenant_id,
+            created_by=user_id,
+            start_datetime__lt=upcoming_end_365d,
+            end_datetime__gte=now,
         ).count()
 
         calendar_rows = (
@@ -207,6 +269,14 @@ class DashboardInsightsView(APIView):
             {
                 'success': True,
                 'window_days': 180,
+                'review_count_30d': int(review_count_30d),
+                'upload_count_30d': int(upload_count_30d),
+                'repository_upload_count_30d': int(repository_upload_count_30d),
+                'private_upload_count_30d': int(private_upload_count_30d),
+                'contracts_r2_upload_count_30d': int(contracts_r2_upload_count_30d),
+                'templates_count': int(templates_count),
+                'template_files_count': int(template_files_count),
+                'contract_templates_count': int(contract_templates_count),
                 'feature_usage_30d': feature_usage,
                 'activity_last_14_days': activity_last_14_days,
                 'contract_types_180d': contract_types,
@@ -214,6 +284,7 @@ class DashboardInsightsView(APIView):
                 'reviews_by_status_180d': reviews_by_status,
                 'calendar_by_category_180d': calendar_by_category,
                 'calendar_upcoming_30d': int(upcoming_30d),
+                'calendar_upcoming_365d': int(upcoming_365d),
                 'esign_by_provider_180d': [
                     {'provider': 'firma', 'count': int(firma_total)},
                     {'provider': 'signnow', 'count': int(signnow_total)},
