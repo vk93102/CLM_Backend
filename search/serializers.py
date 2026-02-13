@@ -15,7 +15,6 @@ class SearchIndexSerializer(serializers.ModelSerializer):
             'metadata',
             'created_at',
             'updated_at',
-            'rank_score'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 

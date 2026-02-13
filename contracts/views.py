@@ -420,10 +420,41 @@ class ClauseViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Set tenant_id and created_by when creating a clause"""
-        serializer.save(
+        obj = serializer.save(
             tenant_id=self.request.user.tenant_id,
             created_by=self.request.user.user_id
         )
+
+        try:
+            from search.services import SearchIndexingService
+
+            SearchIndexingService.create_index(
+                entity_type='clause',
+                entity_id=str(obj.id),
+                title=obj.name or obj.clause_id or 'Clause',
+                content=obj.content or '',
+                tenant_id=str(self.request.user.tenant_id),
+                keywords=[x for x in [obj.contract_type, obj.status] if x],
+            )
+        except Exception:
+            pass
+
+    def perform_update(self, serializer):
+        obj = serializer.save()
+
+        try:
+            from search.services import SearchIndexingService
+
+            SearchIndexingService.create_index(
+                entity_type='clause',
+                entity_id=str(obj.id),
+                title=obj.name or obj.clause_id or 'Clause',
+                content=obj.content or '',
+                tenant_id=str(self.request.user.tenant_id),
+                keywords=[x for x in [obj.contract_type, obj.status] if x],
+            )
+        except Exception:
+            pass
     
     @action(detail=True, methods=['post'], url_path='alternatives')
     def alternatives(self, request, pk=None):
@@ -856,6 +887,24 @@ class ContractViewSet(viewsets.ModelViewSet):
         contract.last_edited_at = timezone.now()
         contract.last_edited_by = request.user.user_id
         contract.save(update_fields=['metadata', 'last_edited_at', 'last_edited_by', 'updated_at'])
+
+        # Best-effort: keep search index in sync for hybrid/semantic search.
+        try:
+            from search.services import SearchIndexingService
+
+            content_for_index = str((contract.metadata or {}).get('rendered_text') or '').strip()
+            if content_for_index:
+                SearchIndexingService.create_index(
+                    entity_type='contract',
+                    entity_id=str(contract.id),
+                    title=contract.title or 'Contract',
+                    content=content_for_index,
+                    tenant_id=str(request.user.tenant_id),
+                    keywords=[x for x in [contract.contract_type, contract.status] if x],
+                )
+        except Exception:
+            # Do not fail the editor save if search indexing fails.
+            pass
 
         # Sync the latest editor snapshot to Cloudflare R2 for durable retrieval.
         # This intentionally overwrites a deterministic key (latest.json) to avoid unbounded growth.

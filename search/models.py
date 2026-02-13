@@ -3,6 +3,8 @@ from django.contrib.postgres.search import SearchVectorField
 from django.contrib.postgres.indexes import GinIndex
 import uuid
 
+from pgvector.django import VectorField
+
 
 class SearchIndexModel(models.Model):
     """
@@ -12,6 +14,7 @@ class SearchIndexModel(models.Model):
     
     ENTITY_TYPES = [
         ('contract', 'Contract'),
+        ('clause', 'Clause'),
         ('template', 'Template'),
         ('workflow', 'Workflow'),
         ('document', 'Document'),
@@ -32,7 +35,7 @@ class SearchIndexModel(models.Model):
     search_vector = SearchVectorField(null=True, blank=True)
     
     # Semantic embedding (for pgvector - optional)
-    # embedding = VectorField(dimensions=1536, null=True, blank=True)
+    embedding = VectorField(dimensions=1024, null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -43,6 +46,11 @@ class SearchIndexModel(models.Model):
         app_label = 'search'
         indexes = [
             GinIndex(fields=['search_vector'], name='search_index_gin'),
+            GinIndex(
+                fields=['title'],
+                name='search_title_trgm_gin',
+                opclasses=['gin_trgm_ops'],
+            ),
             models.Index(fields=['tenant_id', 'entity_type'], name='tenant_entity_idx'),
             models.Index(fields=['entity_type', 'entity_id'], name='entity_lookup_idx'),
         ]

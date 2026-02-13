@@ -8,7 +8,8 @@ from .views import (
     SearchFacetedView,
     SearchSuggestionsView,
     SearchIndexingView,
-    SearchAnalyticsView
+    SearchAnalyticsView,
+    SearchSimilarView
 )
 
 urlpatterns = [
@@ -38,4 +39,7 @@ urlpatterns = [
     
     # Search analytics: GET /api/search/analytics/
     path('analytics/', SearchAnalyticsView.as_view(), name='search-analytics'),
+
+    # Find similar: GET/POST /api/search/similar/
+    path('similar/', SearchSimilarView.as_view(), name='search-similar'),
 ]

@@ -11,6 +11,72 @@ from rest_framework import status
 from rest_framework.views import APIView
 
 
+def _template_entity_uuid(filename: str) -> uuid.UUID:
+    # Deterministic UUID so search results can map back to a template file.
+    # Keep stable across restarts.
+    return uuid.uuid5(uuid.NAMESPACE_URL, f"clm.template_file:{filename}")
+
+
+def _best_effort_index_template_for_tenant(*, tenant_id: uuid.UUID, filename: str) -> None:
+    """Index a template file into SearchIndexModel for the given tenant."""
+    try:
+        from search.models import SearchIndexModel
+        from search.services import SearchIndexingService
+
+        templates_dir = _templates_dir()
+        path = os.path.join(templates_dir, filename)
+        if not os.path.exists(path):
+            return
+
+        try:
+            mtime_epoch = os.path.getmtime(path)
+            size = os.path.getsize(path)
+        except Exception:
+            mtime_epoch = None
+            size = None
+
+        entity_id = _template_entity_uuid(filename)
+        existing = SearchIndexModel.objects.filter(
+            tenant_id=tenant_id,
+            entity_type='template',
+            entity_id=entity_id,
+        ).first()
+
+        existing_md = (existing.metadata or {}) if existing else {}
+        if (
+            isinstance(existing_md, dict)
+            and mtime_epoch is not None
+            and existing_md.get('source_mtime_epoch') == mtime_epoch
+            and size is not None
+            and existing_md.get('source_size') == size
+        ):
+            return
+
+        # Read content (bounded for embeddings cost)
+        try:
+            with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+        except Exception:
+            content = ''
+
+        SearchIndexingService.create_index(
+            entity_type='template',
+            entity_id=str(entity_id),
+            title=_display_name_from_filename(filename),
+            content=(content or '')[:20000],
+            tenant_id=str(tenant_id),
+            keywords=[_infer_template_type(filename)],
+            metadata={
+                'source': 'template_files',
+                'filename': filename,
+                'source_mtime_epoch': mtime_epoch,
+                'source_size': size,
+            },
+        )
+    except Exception:
+        return
+
+
 def _templates_dir() -> str:
     return os.path.join(settings.BASE_DIR, "templates")
 
@@ -108,6 +174,16 @@ class TemplateFilesView(APIView):
         files = [f for f in os.listdir(templates_dir) if f.lower().endswith(".txt")]
         files.sort(key=lambda f: os.path.getmtime(os.path.join(templates_dir, f)), reverse=True)
 
+        # Best-effort: keep the tenant's template search index warm.
+        try:
+            if getattr(request.user, 'is_authenticated', False) and getattr(request.user, 'tenant_id', None):
+                tenant_id = request.user.tenant_id
+                # Keep it bounded; index the most-recent N.
+                for fn in files[:50]:
+                    _best_effort_index_template_for_tenant(tenant_id=tenant_id, filename=fn)
+        except Exception:
+            pass
+
         results = []
         for filename in files:
             path = os.path.join(templates_dir, filename)
@@ -169,17 +245,26 @@ class TemplateFilesView(APIView):
         now = timezone.now().isoformat()
         created_by_id = getattr(request.user, "user_id", None)
         created_by_email = getattr(request.user, "email", None)
+        tenant_id = getattr(request.user, 'tenant_id', None)
 
         _write_template_meta(
             path,
             {
                 "created_by_id": str(created_by_id) if created_by_id else None,
                 "created_by_email": created_by_email,
+                "tenant_id": str(tenant_id) if tenant_id else None,
                 "description": description,
                 "created_at": now,
                 "updated_at": now,
             },
         )
+
+        # Best-effort: index new template for semantic/keyword search.
+        try:
+            if tenant_id:
+                _best_effort_index_template_for_tenant(tenant_id=tenant_id, filename=safe)
+        except Exception:
+            pass
 
         return Response(
             {

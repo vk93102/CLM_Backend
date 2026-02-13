@@ -25,4 +25,7 @@ urlpatterns = [
     path('api/v1/', include('workflows.urls')),
     path('api/v1/', include('approvals.urls')),
     path('api/v1/', include('authentication.dashboard_urls')),
+
+    # Search endpoints (used by frontend ApiClient under /api/search/)
+    path('api/search/', include('search.urls')),
 ]

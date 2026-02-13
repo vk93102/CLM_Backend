@@ -7,9 +7,12 @@ import logging
 import numpy as np
 from typing import List, Dict, Optional, Tuple
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Q, F, Value, FloatField
 from django.db.models.functions import Cast
 from django.conf import settings
+
+from pgvector.django import CosineDistance
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +161,7 @@ class FullTextSearchService:
     """
     
     @staticmethod
-    def search(query: str, tenant_id: str, limit: int = 50) -> list:
+    def search(query: str, tenant_id: str, limit: int = 50, entity_type: str | None = None):
         """
         Perform PostgreSQL FTS search
         
@@ -176,20 +179,28 @@ class FullTextSearchService:
             # Create search query with PostgreSQL FTS
             search_query = SearchQuery(query, search_type='plain')
             
-            # Execute FTS search with ranking
-            results = SearchIndexModel.objects.filter(
-                tenant_id=tenant_id,
-                search_vector=search_query
-            ).annotate(
-                rank=SearchRank('search_vector', search_query)
-            ).order_by('-rank')[:limit]
+            base = SearchIndexModel.objects.filter(tenant_id=tenant_id)
+            if entity_type:
+                base = base.filter(entity_type=entity_type)
+
+            qs = base.annotate(
+                rank=SearchRank('search_vector', search_query),
+                trigram=TrigramSimilarity('title', query),
+            )
+
+            # Accept either strong FTS match or decent fuzzy (trigram) match.
+            qs = qs.filter(Q(search_vector=search_query) | Q(trigram__gte=0.2)).annotate(
+                score=(0.85 * F('rank')) + (0.15 * F('trigram'))
+            )
+
+            results = qs.order_by('-score')[:limit]
             
             logger.info(f"FTS Search: '{query}' returned {len(results)} results (strategy={ModelConfig.FTS_STRATEGY})")
-            return list(results)
+            return results
         
         except Exception as e:
             logger.error(f"FTS search failed: {str(e)}")
-            return []
+            return SearchIndexModel.objects.none()
     
     @staticmethod
     def get_search_metadata(results: list) -> list:
@@ -202,6 +213,7 @@ class FullTextSearchService:
                 'title': getattr(r, 'title', 'Unknown'),
                 'content': getattr(r, 'content', '')[:500],
                 'keywords': getattr(r, 'keywords', []),
+                'metadata': getattr(r, 'metadata', {}) or {},
                 'relevance_score': float(getattr(r, 'rank', 0.0)),
                 'search_strategy': ModelConfig.FTS_STRATEGY,
                 'created_at': r.created_at.isoformat() if hasattr(r, 'created_at') and r.created_at else None,
@@ -229,7 +241,8 @@ class SemanticSearchService:
     @staticmethod
     def search(query: str, tenant_id: str, 
                similarity_threshold: float = 0.6, 
-               limit: int = 50) -> list:
+               limit: int = 50,
+               entity_type: str | None = None) -> list:
         """
         Perform semantic search using Voyage AI embeddings
         
@@ -255,19 +268,26 @@ class SemanticSearchService:
                 logger.warning(f"Failed to generate query embedding, falling back to FTS: '{query}'")
                 return FullTextSearchService.search(query, tenant_id, limit=limit)
             
-            # Step 2: Use FTS search (pgvector implementation requires Django-pgvector)
-            # For now, use FTS which is available
-            search_query = SearchQuery(query, search_type='plain')
-            
-            results = SearchIndexModel.objects.filter(
-                tenant_id=tenant_id,
-                search_vector=search_query
-            ).annotate(
-                rank=SearchRank(F('search_vector'), search_query)
-            ).order_by('-rank')[:limit]
-            
-            logger.info(f"Semantic search (Voyage AI): '{query}' returned {len(results)} results (threshold={similarity_threshold})")
-            return list(results)
+            # Step 2: Vector similarity via pgvector (cosine distance)
+            # Cosine similarity = 1 - cosine_distance
+            base = SearchIndexModel.objects.filter(tenant_id=tenant_id, embedding__isnull=False)
+            if entity_type:
+                base = base.filter(entity_type=entity_type)
+
+            qs = (
+                base
+                .annotate(distance=CosineDistance('embedding', query_embedding))
+                .annotate(similarity=Value(1.0, output_field=FloatField()) - F('distance'))
+                .filter(similarity__gte=similarity_threshold)
+                .order_by('-similarity')[:limit]
+            )
+
+            results = list(qs)
+            logger.info(
+                f"Semantic search (pgvector+Voyage): '{query}' returned {len(results)} results "
+                f"(threshold={similarity_threshold})"
+            )
+            return results
         
         except Exception as e:
             logger.error(f"Semantic search failed: {str(e)}")
@@ -284,7 +304,8 @@ class SemanticSearchService:
                 'entity_id': str(getattr(r, 'entity_id', '')),
                 'title': getattr(r, 'title', 'Unknown'),
                 'content': getattr(r, 'content', '')[:500],
-                'relevance_score': float(getattr(r, 'rank', 0.5)),
+                'relevance_score': float(getattr(r, 'similarity', getattr(r, 'rank', 0.0))),
+                'metadata': getattr(r, 'metadata', {}) or {},
                 'embedding_model': ModelConfig.VOYAGE_MODEL,
                 'embedding_dimension': ModelConfig.VOYAGE_EMBEDDING_DIMENSION,
                 'created_at': r.created_at.isoformat() if hasattr(r, 'created_at') and r.created_at else None,
@@ -365,6 +386,17 @@ class HybridSearchService:
                 (0.3 * scores['fts_score']) +
                 (0.1 * scores['recency_score'])
             )
+
+            # Attach scores onto the model object for serialization/metadata.
+            obj = scores.get('object')
+            try:
+                setattr(obj, 'final_score', scores['final_score'])
+                setattr(obj, 'fts_score', scores['fts_score'])
+                setattr(obj, 'semantic_score', scores['semantic_score'])
+                setattr(obj, 'recency_score', scores['recency_score'])
+                setattr(obj, 'hybrid_source', scores.get('source'))
+            except Exception:
+                pass
         
         # Step 5: Sort by final score
         sorted_results = sorted(
@@ -491,12 +523,14 @@ class FacetedSearchService:
                 tenant_id=tenant_id
             ).values_list('keywords', flat=True).distinct()
             
+            from django.db.models import Min, Max
+
             # Date range
             date_range_data = SearchIndexModel.objects.filter(
                 tenant_id=tenant_id
             ).aggregate(
-                earliest=F('created_at'),
-                latest=F('created_at')
+                earliest=Min('created_at'),
+                latest=Max('created_at')
             )
             
             return {
@@ -554,9 +588,15 @@ class SearchIndexingService:
     """
     
     @staticmethod
-    def create_index(entity_type: str, entity_id: str, title: str,
-                    content: str, tenant_id: str, 
-                    keywords: List[str] = None) -> Tuple:
+    def create_index(
+        entity_type: str,
+        entity_id: str,
+        title: str,
+        content: str,
+        tenant_id: str,
+        keywords: List[str] = None,
+        metadata: Dict | None = None,
+    ) -> Tuple:
         """
         Create or update search index entry
         
@@ -566,13 +606,27 @@ class SearchIndexingService:
         from .models import SearchIndexModel
         
         try:
-            # Generate embedding (for future use)
+            # Generate embedding (best-effort)
             embedding = EmbeddingService.generate(
-                f"{title} {content}",
-                task_type="retrieval_document"
+                f"{title}\n\n{content}",
+                input_type="document",
             )
             
-            # Create or update (don't store embedding for now)
+            existing = SearchIndexModel.objects.filter(
+                tenant_id=tenant_id,
+                entity_type=entity_type,
+                entity_id=entity_id,
+            ).first()
+            existing_md = (getattr(existing, 'metadata', None) or {}) if existing else {}
+
+            merged_md = {
+                **(existing_md if isinstance(existing_md, dict) else {}),
+                **(metadata if isinstance(metadata, dict) else {}),
+                'embedding_hash': hash(str(embedding)[:100]),
+                'indexed_by': 'SearchIndexingService',
+            }
+
+            # Create or update
             index_obj, created = SearchIndexModel.objects.update_or_create(
                 tenant_id=tenant_id,
                 entity_type=entity_type,
@@ -581,10 +635,8 @@ class SearchIndexingService:
                     'title': title,
                     'content': content,
                     'keywords': keywords or [],
-                    'metadata': {
-                        'embedding_hash': hash(str(embedding)[:100]),
-                        'indexed_by': 'SearchIndexingService'
-                    }
+                    'embedding': embedding,
+                    'metadata': merged_md,
                 }
             )
             

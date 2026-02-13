@@ -49,6 +49,7 @@ class SearchKeywordView(APIView):
         
         query = request.query_params.get('q', '').strip()
         limit = int(request.query_params.get('limit', 20))
+        entity_type = (request.query_params.get('entity_type') or '').strip() or None
         
         if not query or len(query) < 2:
             return Response({
@@ -60,7 +61,7 @@ class SearchKeywordView(APIView):
         tenant_id = str(request.user.tenant_id)
         
         # Perform real full-text search
-        results = FullTextSearchService.search(query, tenant_id, limit=limit)
+        results = FullTextSearchService.search(query, tenant_id, limit=limit, entity_type=entity_type)
         
         # Get formatted results with real data
         search_results = FullTextSearchService.get_search_metadata(results)
@@ -118,6 +119,7 @@ class SearchSemanticView(APIView):
         query = request.query_params.get('q', '').strip()
         limit = int(request.query_params.get('limit', 20))
         threshold = float(request.query_params.get('similarity_threshold', 0.6))
+        entity_type = (request.query_params.get('entity_type') or '').strip() or None
         
         if not query:
             return Response({
@@ -145,7 +147,8 @@ class SearchSemanticView(APIView):
                     query=query,
                     tenant_id=tenant_id,
                     similarity_threshold=threshold,
-                    limit=limit
+                    limit=limit,
+                    entity_type=entity_type,
                 )
                 
                 # Get formatted results with real embedding metadata
@@ -309,7 +312,7 @@ class SearchAdvancedView(APIView):
             if query:
                 results = FullTextSearchService.search(query, tenant_id, limit=limit*2)
             else:
-                results = list(SearchIndexModel.objects.filter(tenant_id=tenant_id))
+                results = SearchIndexModel.objects.filter(tenant_id=tenant_id)
             
             # Apply filters if provided
             if filters:
@@ -380,7 +383,7 @@ class SearchFacetedView(APIView):
             if query:
                 results = FullTextSearchService.search(query, tenant_id, limit=limit*2)
             else:
-                results = list(SearchIndexModel.objects.filter(tenant_id=tenant_id))
+                results = SearchIndexModel.objects.filter(tenant_id=tenant_id)
             
             # Apply facet filters
             results = FacetedSearchService.apply_facet_filters(results, facet_filters)
@@ -541,3 +544,70 @@ class SearchAnalyticsView(APIView):
                 'success': False
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     permission_classes = [IsAuthenticated]
+
+
+class SearchSimilarView(APIView):
+    """Find similar indexed items using pgvector cosine similarity.
+
+    Endpoint: GET /api/search/similar/?id=<search_index_id>&limit=20
+      -or-   POST /api/search/similar/ {"text": "...", "limit": 20}
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        tenant_id = str(request.user.tenant_id)
+        limit = int(request.query_params.get('limit', 20))
+        source_id = (request.query_params.get('id') or '').strip()
+
+        if not source_id:
+            return Response({'error': 'id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            source = SearchIndexModel.objects.get(id=source_id, tenant_id=tenant_id)
+        except Exception:
+            return Response({'error': 'Source item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not getattr(source, 'embedding', None):
+            return Response({'error': 'Source item has no embedding yet'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from pgvector.django import CosineDistance
+        from django.db.models import F, Value, FloatField
+
+        qs = (
+            SearchIndexModel.objects
+            .filter(tenant_id=tenant_id, embedding__isnull=False)
+            .exclude(id=source.id)
+            .annotate(distance=CosineDistance('embedding', source.embedding))
+            .annotate(similarity=Value(1.0, output_field=FloatField()) - F('distance'))
+            .order_by('-similarity')[:limit]
+        )
+
+        results = SemanticSearchService.get_semantic_metadata(list(qs))
+        return Response({'source_id': str(source.id), 'results': results, 'count': len(results), 'success': True})
+
+    def post(self, request):
+        tenant_id = str(request.user.tenant_id)
+        text = (request.data.get('text') or '').strip()
+        limit = int(request.data.get('limit', 20))
+        threshold = float(request.data.get('similarity_threshold', 0.6))
+
+        if not text:
+            return Response({'error': 'text is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            results = SemanticSearchService.search(
+                query=text,
+                tenant_id=tenant_id,
+                similarity_threshold=threshold,
+                limit=limit,
+            )
+            return Response({
+                'query': text,
+                'results': SemanticSearchService.get_semantic_metadata(results),
+                'count': len(results),
+                'success': True,
+            })
+        except Exception as e:
+            logger.error(f"Similar-by-text failed: {str(e)}")
+            return Response({'error': str(e), 'success': False}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
