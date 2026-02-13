@@ -335,6 +335,67 @@ class TemplateFileContentView(APIView):
         )
 
 
+class TemplateFileDeleteView(APIView):
+    """DELETE /api/v1/templates/files/<filename>/ -> delete template created by current user."""
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, filename: str):
+        safe = _sanitize_filename(filename)
+
+        tmpl = TemplateFile.objects.filter(filename=safe).first()
+        if not tmpl:
+            return Response(
+                {"success": False, "error": "Template file not found", "filename": safe},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        user = request.user
+        user_id = getattr(user, 'user_id', None)
+        user_uuid = None
+        try:
+            if user_id:
+                user_uuid = uuid.UUID(str(user_id))
+        except Exception:
+            user_uuid = None
+        user_email = (getattr(user, 'email', None) or '').strip().lower()
+        tenant_id_raw = getattr(user, 'tenant_id', None)
+        tenant_uuid = None
+        try:
+            if tenant_id_raw:
+                tenant_uuid = uuid.UUID(str(tenant_id_raw))
+        except Exception:
+            tenant_uuid = None
+
+        tmpl_email = (tmpl.created_by_email or '').strip().lower()
+        is_owner = bool(
+            (user_uuid and tmpl.created_by_id and tmpl.created_by_id == user_uuid)
+            or (user_email and tmpl_email and tmpl_email == user_email)
+        )
+
+        # Tenant isolation: only allow deleting templates within the user's tenant.
+        # (Global templates are treated as non-deletable unless you are the creator.)
+        same_tenant = (tmpl.tenant_id is None) or (tenant_uuid and tmpl.tenant_id == tenant_uuid)
+
+        if not is_owner or not same_tenant:
+            return Response(
+                {"success": False, "error": "You can only delete templates you created."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Best-effort: remove from search index.
+        try:
+            if tenant_uuid:
+                from search.services import SearchIndexingService
+
+                SearchIndexingService.delete_index(entity_id=str(_template_entity_uuid(safe)))
+        except Exception:
+            pass
+
+        tmpl.delete()
+        return Response({"success": True, "filename": safe}, status=status.HTTP_200_OK)
+
+
 def _default_signature_fields_config() -> dict:
     return {
         "fields": [

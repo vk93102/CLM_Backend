@@ -35,11 +35,17 @@ class TenantIsolationMiddleware(MiddlewareMixin):
             if hasattr(request, 'user') and request.user.is_authenticated:
                 # Add tenant_id to request for use in views/queries
                 request.tenant_id = getattr(request.user, 'tenant_id', None)
+
+                user_id = (
+                    getattr(request.user, 'user_id', None)
+                    or getattr(request.user, 'id', None)
+                    or getattr(request.user, 'pk', None)
+                )
                 
                 if not request.tenant_id:
-                    logger.warning(f"User {request.user.id} has no tenant_id")
+                    logger.warning(f"User {user_id} has no tenant_id")
                 else:
-                    logger.debug(f"Tenant {request.tenant_id} injected for user {request.user.id}")
+                    logger.debug(f"Tenant {request.tenant_id} injected for user {user_id}")
             
             return None
         except Exception as e:
@@ -112,13 +118,21 @@ class AuditLoggingMiddleware(MiddlewareMixin):
     def process_request(self, request):
         """Store request info for later logging"""
         if self.should_log(request.path):
+            user = getattr(request, 'user', None)
+            is_authed = bool(getattr(user, 'is_authenticated', False))
+            user_id = None
+            tenant_id = None
+            if is_authed:
+                user_id = getattr(user, 'user_id', None) or getattr(user, 'id', None) or getattr(user, 'pk', None)
+                tenant_id = getattr(user, 'tenant_id', None)
+
             # Store info on request object for access in process_response
             request._audit_log_data = {
                 'method': request.method,
                 'path': request.path,
                 'remote_addr': self.get_client_ip(request),
-                'user_id': getattr(request.user, 'id', None) if hasattr(request, 'user') and request.user.is_authenticated else None,
-                'tenant_id': getattr(request.user, 'tenant_id', None) if hasattr(request, 'user') and request.user.is_authenticated else None,
+                'user_id': user_id,
+                'tenant_id': tenant_id,
                 'request_hash': self.get_request_hash(request),
                 'timestamp': timezone.now(),
                 'request_id': getattr(request, 'request_id', None),

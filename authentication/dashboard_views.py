@@ -32,6 +32,26 @@ class DashboardInsightsView(APIView):
         since_14d = now - timedelta(days=14)
         since_180d = now - timedelta(days=180)
 
+        # Derive usage counts from first-class data so the dashboard remains
+        # informative even when AuditLog coverage is partial.
+        review_count_30d = ReviewContract.objects.filter(
+            tenant_id=tenant_id,
+            created_by=user_id,
+            created_at__gte=since_30d,
+        ).count()
+
+        upload_count_30d = 0
+        try:
+            from repository.models import Document
+
+            upload_count_30d = Document.objects.filter(
+                tenant_id=tenant_id,
+                uploaded_by_id=user_id,
+                uploaded_at__gte=since_30d,
+            ).count()
+        except Exception:
+            upload_count_30d = 0
+
         # -------------------- Feature usage (Audit logs) --------------------
         feature_rows = (
             AuditLogModel.objects.filter(tenant_id=tenant_id, user_id=user_id, created_at__gte=since_30d)
@@ -39,13 +59,29 @@ class DashboardInsightsView(APIView):
             .annotate(count=Count('id'))
             .order_by('-count')
         )
+        usage_map: dict[str, int] = {}
+        for r in feature_rows:
+            key = (r.get('entity_type') or 'unknown')
+            usage_map[key] = int(r.get('count') or 0)
+
+        # Ensure canonical keys used by the frontend exist.
+        usage_map['review'] = max(int(usage_map.get('review', 0) or 0), int(review_count_30d))
+        usage_map['upload'] = max(int(usage_map.get('upload', 0) or 0), int(upload_count_30d))
+
         feature_usage = [
-            {
-                'key': (r.get('entity_type') or 'unknown'),
-                'count': int(r.get('count') or 0),
-            }
-            for r in feature_rows[:12]
+            {'key': 'review', 'count': int(usage_map.get('review', 0) or 0)},
+            {'key': 'upload', 'count': int(usage_map.get('upload', 0) or 0)},
         ]
+
+        # Add remaining audit-derived keys (bounded).
+        for key, count in sorted(
+            ((k, v) for k, v in usage_map.items() if k not in {'review', 'upload'}),
+            key=lambda kv: kv[1],
+            reverse=True,
+        ):
+            feature_usage.append({'key': key, 'count': int(count)})
+            if len(feature_usage) >= 12:
+                break
 
         # -------------------- Activity trend (last 14 days) --------------------
         day_rows = (
@@ -80,8 +116,32 @@ class DashboardInsightsView(APIView):
             .annotate(count=Count('id'))
             .order_by('-count')
         )
+        ai_status_map: dict[str, int] = {}
+        for r in ai_rows:
+            s = (r.get('status') or 'unknown')
+            ai_status_map[s] = ai_status_map.get(s, 0) + int(r.get('count') or 0)
+
+        # Review feature invokes AI (Gemini/Voyage) but does not currently create DraftGenerationTask rows.
+        # Fold review pipeline counts into AI usage so the dashboard updates for real usage.
+        review_ai_rows = (
+            ReviewContract.objects.filter(tenant_id=tenant_id, created_by=user_id, created_at__gte=since_180d)
+            .values('status')
+            .annotate(count=Count('id'))
+        )
+        status_map = {
+            'uploaded': 'pending',
+            'processing': 'processing',
+            'ready': 'completed',
+            'failed': 'failed',
+        }
+        for r in review_ai_rows:
+            raw = (r.get('status') or 'unknown')
+            mapped = status_map.get(raw, 'unknown')
+            ai_status_map[mapped] = ai_status_map.get(mapped, 0) + int(r.get('count') or 0)
+
         ai_by_status = [
-            {'status': (r.get('status') or 'unknown'), 'count': int(r.get('count') or 0)} for r in ai_rows
+            {'status': s, 'count': int(c)}
+            for s, c in sorted(ai_status_map.items(), key=lambda kv: kv[1], reverse=True)
         ]
 
         # -------------------- Review stats --------------------
