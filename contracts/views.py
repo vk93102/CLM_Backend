@@ -1785,15 +1785,30 @@ Relevant clause library (optional):
             return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
 
         safe = self._sanitize_template_filename(filename)
-        path = os.path.join(self._templates_dir(), safe)
-        if not os.path.exists(path):
-            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            from django.db.models import Q
+            from contracts.models import TemplateFile
+            from contracts.utils.template_files_db import get_or_import_template_from_filesystem
 
-        with open(path, 'r', encoding='utf-8') as f:
-            raw_text = f.read()
+            tmpl = TemplateFile.objects.filter(filename=safe).filter(
+                Q(tenant_id=tenant_id) | Q(tenant_id__isnull=True)
+            ).first()
+        except Exception:
+            tmpl = None
+
+        if not tmpl:
+            try:
+                tmpl = get_or_import_template_from_filesystem(filename=safe, tenant_id=tenant_id)
+            except Exception:
+                tmpl = None
+
+        if not tmpl:
+            return Response({'error': 'Template not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        raw_text = tmpl.content or ''
 
         rendered = self._render_template_text(raw_text, structured_inputs)
-        contract_type = self._infer_contract_type_from_filename(safe)
+        contract_type = (tmpl.contract_type or self._infer_contract_type_from_filename(safe))
         additions = self._assemble_additions_block(tenant_id, contract_type, selected_clauses, custom_clauses, constraints)
         rendered = self._apply_additions(rendered, additions)
 
@@ -1837,15 +1852,30 @@ Relevant clause library (optional):
             return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
 
         safe = self._sanitize_template_filename(filename)
-        path = os.path.join(self._templates_dir(), safe)
-        if not os.path.exists(path):
-            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            from django.db.models import Q
+            from contracts.models import TemplateFile
+            from contracts.utils.template_files_db import get_or_import_template_from_filesystem
 
-        with open(path, 'r', encoding='utf-8') as f:
-            raw_text = f.read()
+            tmpl = TemplateFile.objects.filter(filename=safe).filter(
+                Q(tenant_id=tenant_id) | Q(tenant_id__isnull=True)
+            ).first()
+        except Exception:
+            tmpl = None
+
+        if not tmpl:
+            try:
+                tmpl = get_or_import_template_from_filesystem(filename=safe, tenant_id=tenant_id)
+            except Exception:
+                tmpl = None
+
+        if not tmpl:
+            return Response({'error': 'Template not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        raw_text = tmpl.content or ''
 
         rendered = self._render_template_text(raw_text, structured_inputs)
-        inferred_type = self._infer_contract_type_from_filename(safe)
+        inferred_type = (tmpl.contract_type or self._infer_contract_type_from_filename(safe))
         additions = self._assemble_additions_block(tenant_id, inferred_type, selected_clauses, custom_clauses, constraints)
         rendered = self._apply_additions(rendered, additions)
 
@@ -1882,7 +1912,7 @@ Relevant clause library (optional):
                 clauses=clauses_payload,
                 metadata={
                     'template_filename': safe,
-                    'template_source': 'filesystem',
+                    'template_source': 'template_files_db',
                     'raw_text': raw_text,
                     'rendered_text': rendered,
                 },
@@ -4389,15 +4419,30 @@ class ContractViewSetLegacy(viewsets.ModelViewSet):
             return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
 
         safe = self._sanitize_template_filename(filename)
-        path = os.path.join(self._templates_dir(), safe)
-        if not os.path.exists(path):
-            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            from django.db.models import Q
+            from contracts.models import TemplateFile
+            from contracts.utils.template_files_db import get_or_import_template_from_filesystem
 
-        with open(path, 'r', encoding='utf-8') as f:
-            raw_text = f.read()
+            tmpl = TemplateFile.objects.filter(filename=safe).filter(
+                Q(tenant_id=tenant_id) | Q(tenant_id__isnull=True)
+            ).first()
+        except Exception:
+            tmpl = None
+
+        if not tmpl:
+            try:
+                tmpl = get_or_import_template_from_filesystem(filename=safe, tenant_id=tenant_id)
+            except Exception:
+                tmpl = None
+
+        if not tmpl:
+            return Response({'error': 'Template not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        raw_text = tmpl.content or ''
 
         rendered = self._render_template_text(raw_text, structured_inputs)
-        contract_type = self._infer_contract_type_from_filename(safe)
+        contract_type = (tmpl.contract_type or self._infer_contract_type_from_filename(safe))
         additions = self._assemble_additions_block(tenant_id, contract_type, selected_clauses, custom_clauses, constraints)
         rendered = self._apply_additions(rendered, additions)
 
@@ -4441,15 +4486,30 @@ class ContractViewSetLegacy(viewsets.ModelViewSet):
             return Response({'error': 'constraints must be a list'}, status=status.HTTP_400_BAD_REQUEST)
 
         safe = self._sanitize_template_filename(filename)
-        path = os.path.join(self._templates_dir(), safe)
-        if not os.path.exists(path):
-            return Response({'error': 'Template file not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            from django.db.models import Q
+            from contracts.models import TemplateFile
+            from contracts.utils.template_files_db import get_or_import_template_from_filesystem
 
-        with open(path, 'r', encoding='utf-8') as f:
-            raw_text = f.read()
+            tmpl = TemplateFile.objects.filter(filename=safe).filter(
+                Q(tenant_id=tenant_id) | Q(tenant_id__isnull=True)
+            ).first()
+        except Exception:
+            tmpl = None
+
+        if not tmpl:
+            try:
+                tmpl = get_or_import_template_from_filesystem(filename=safe, tenant_id=tenant_id)
+            except Exception:
+                tmpl = None
+
+        if not tmpl:
+            return Response({'error': 'Template not found', 'filename': safe}, status=status.HTTP_404_NOT_FOUND)
+
+        raw_text = tmpl.content or ''
 
         rendered = self._render_template_text(raw_text, structured_inputs)
-        inferred_type = self._infer_contract_type_from_filename(safe)
+        inferred_type = (tmpl.contract_type or self._infer_contract_type_from_filename(safe))
         additions = self._assemble_additions_block(tenant_id, inferred_type, selected_clauses, custom_clauses, constraints)
         rendered = self._apply_additions(rendered, additions)
 
@@ -4486,7 +4546,7 @@ class ContractViewSetLegacy(viewsets.ModelViewSet):
                 clauses=clauses_payload,
                 metadata={
                     'template_filename': safe,
-                    'template_source': 'filesystem',
+                    'template_source': 'template_files_db',
                     'raw_text': raw_text,
                     'rendered_text': rendered,
                 },

@@ -30,3 +30,10 @@ if hasattr(models, 'BusinessRule'):
         list_display = ('name', 'rule_type', 'is_active')
         list_filter = ('rule_type', 'is_active')
         search_fields = ('name', 'description')
+
+if hasattr(models, 'TemplateFile'):
+    @admin.register(models.TemplateFile, site=admin_site)
+    class TemplateFileAdmin(admin.ModelAdmin):
+        list_display = ('filename', 'name', 'contract_type', 'status', 'tenant_id', 'updated_at')
+        list_filter = ('status', 'contract_type')
+        search_fields = ('filename', 'name', 'description')

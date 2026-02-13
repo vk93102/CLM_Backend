@@ -1,0 +1,481 @@
+LEGAL COMPLIANCE MANAGEMENT
+MASTER TEMPLATE
+
+
+In-House Legal Department
+United States Federal & State Law Compliance
+
+Organization: ___________________________________________
+Version: _______________   Date: ___________________
+Prepared by: __________________________________________
+Approved by: __________________________________________
+1. DOCUMENT CONTROL & PURPOSE
+1.1 Purpose
+This Legal Compliance Management Template provides a structured framework for in-house legal teams to identify, track, monitor, and report on compliance obligations under applicable United States federal and state laws and regulations. It is intended to serve as a living document updated on a regular basis by the Legal Department.
+1.2 Scope
+This template applies to all business units, subsidiaries, and affiliates of the organization operating within the United States. It covers:
+	•	Federal statutory and regulatory requirements (e.g., ADA, FCPA, SEC, OSHA, HIPAA, GDPR cross-border)
+	•	State-specific legal requirements in all jurisdictions where the organization operates
+	•	Industry-specific regulatory mandates applicable to the organization's sector
+	•	Contractual compliance obligations with legal or regulatory implications
+1.3 Responsible Parties
+
+Role
+Responsibility
+Contact
+General Counsel
+Overall compliance oversight
+Name / Email
+Chief Compliance Officer
+Day-to-day compliance management
+Name / Email
+HR Legal Liaison
+Employment law compliance
+Name / Email
+Privacy Officer
+Data privacy & protection laws
+Name / Email
+Business Unit Heads
+Unit-level regulatory compliance
+Name / Email
+
+2. REGULATORY INVENTORY
+2.1 Federal Law Compliance Register
+Identify all applicable federal laws and regulations and assess current compliance status.
+
+Law / Regulation
+Description
+Governing Agency
+Applicability
+Status
+Owner
+ADA (42 U.S.C. § 12101)
+Americans with Disabilities Act – workplace & public accommodation obligations
+DOJ / EEOC
+All employees
+✔ Compliant
+HR Legal
+Title VII (42 U.S.C. § 2000e)
+Civil Rights Act – anti-discrimination in employment
+EEOC
+15+ employees
+✔ Compliant
+HR Legal
+FLSA (29 U.S.C. § 201)
+Fair Labor Standards Act – wage, hour, overtime
+DOL / WHD
+All employees
+⚠ Under Review
+HR Legal
+HIPAA (45 CFR Parts 160/164)
+Health information privacy & security
+HHS / OCR
+Health data handlers
+✔ Compliant
+Privacy Officer
+FCPA (15 U.S.C. § 78dd)
+Foreign Corrupt Practices Act – anti-bribery
+DOJ / SEC
+International ops
+✔ Compliant
+General Counsel
+SOX (15 U.S.C. § 7201)
+Sarbanes-Oxley – financial reporting & internal controls
+SEC / PCAOB
+Public companies
+✔ Compliant
+CFO / Legal
+OSHA (29 U.S.C. § 651)
+Occupational Safety & Health Act
+OSHA / DOL
+All workplaces
+✔ Compliant
+Ops / Legal
+CAN-SPAM / TCPA
+Commercial email / telemarketing rules
+FTC / FCC
+Marketing teams
+⚠ Under Review
+Marketing Legal
+[Add Law]
+[Description]
+[Agency]
+[Scope]
+[Status]
+[Owner]
+
+2.2 State Law Compliance Register
+Track compliance requirements in all US states where the organization operates. Add rows as applicable.
+
+State
+Law / Regulation
+Key Requirements
+Deadline / Renewal
+Status
+Owner
+CA
+CCPA / CPRA
+Consumer privacy rights, data deletion, opt-out of sale obligations
+Annual audit
+✔ Compliant
+Privacy Officer
+NY
+SHIELD Act / NYCHRL
+Data breach notification, expanded HR anti-discrimination provisions
+Ongoing
+✔ Compliant
+HR Legal
+TX
+TDPSA
+Texas Data Privacy and Security Act requirements
+Assess Q3
+⚠ In Progress
+Privacy Officer
+[State]
+[Law]
+[Requirements]
+[Deadline]
+[Status]
+[Owner]
+
+3. COMPLIANCE RISK ASSESSMENT
+3.1 Risk Rating Matrix
+Use the matrix below to assign risk levels. Rate each identified compliance obligation by likelihood and impact.
+
+Impact \ Likelihood
+Low (1)
+Medium (2)
+High (3)
+High (3)
+Medium Risk (3)
+High Risk (6)
+Critical Risk (9)
+Medium (2)
+Low Risk (2)
+Medium Risk (4)
+High Risk (6)
+Low (1)
+Low Risk (1)
+Low Risk (2)
+Medium Risk (3)
+
+3.2 Active Risk Register
+
+Ref #
+Risk Description
+Law / Area
+Likelihood
+Impact
+Risk Level
+Mitigation Plan
+R-001
+Wage & hour classification issues for contract workers
+FLSA / State Wage Laws
+Medium (2)
+High (3)
+High (6)
+Conduct classification audit by Q2; revise contracts
+R-002
+Inadequate data breach notification procedures
+HIPAA / State Privacy Laws
+Low (1)
+High (3)
+Medium (3)
+Update incident response plan; train IT and Legal
+R-003
+Vendor contract anti-bribery gap
+FCPA
+Low (1)
+High (3)
+Medium (3)
+Add FCPA clause to standard vendor agreement template
+[Ref]
+[Description]
+[Law / Area]
+[Likelihood]
+[Impact]
+[Risk Level]
+[Mitigation]
+
+4. COMPLIANCE CALENDAR & KEY DEADLINES
+Track recurring legal filings, reporting deadlines, and renewal obligations below. Update quarterly.
+
+Period
+Obligation
+Law / Agency
+Due Date
+Responsible Party
+Status
+Q1
+EEO-1 Component 1 Data Collection
+EEOC (Title VII)
+March 31
+HR Legal
+Scheduled
+Q1
+State business license renewals
+State Sec. of State
+Varies by state
+Corporate Counsel
+In Progress
+Q2
+Annual OSHA 300 Log Posting & Submission
+OSHA / DOL
+Feb 1 – Apr 30 (post)
+Operations / Legal
+Completed
+Q2
+Annual privacy policy review & update
+CCPA / CPRA / TDPSA
+June 30
+Privacy Officer
+Pending
+Q3
+SOX 302 / 906 CEO & CFO Certifications
+SEC / SOX
+45 days post quarter
+CFO / General Counsel
+Recurring
+Q4
+Annual ethics & compliance training completion
+FCPA / Internal Policy
+December 31
+CCO / HR Legal
+Planned
+[Period]
+[Obligation]
+[Law / Agency]
+[Due Date]
+[Responsible Party]
+[Status]
+
+5. INCIDENT & VIOLATION LOG
+Record all compliance incidents, potential violations, and remediation actions. Maintain strict confidentiality. Consult General Counsel before external reporting.
+
+ID
+Date
+Incident Description
+Law / Area
+Severity
+Reported By
+Remediation & Outcome
+INC-001
+[Date]
+[Describe the incident in factual terms]
+[Law]
+[Low / Medium / High]
+[Name / Dept]
+[Actions taken, resolution, penalties if any]
+INC-002
+[Date]
+[Description]
+[Law]
+[Severity]
+[Reporter]
+[Remediation]
+
+5.1 Reporting Obligations Checklist
+Upon identifying a potential violation, verify mandatory reporting requirements:
+	•	Determine whether a federal or state mandatory disclosure obligation is triggered (e.g., data breach — notify affected individuals within state-mandated timeframe)
+	•	Consult with General Counsel and outside counsel as necessary
+	•	Preserve all relevant records under a legal hold
+	•	Document all remediation steps taken with dates and responsible parties
+	•	Notify insurer if D&O, E&O, or cyber liability coverage may apply
+
+6. COMPLIANCE TRAINING & AWARENESS
+6.1 Required Training Programs
+
+Training Program
+Target Audience
+Frequency
+Required By
+Completion Rate
+Last Completed
+Anti-Harassment & Discrimination
+All Employees
+Annual
+Title VII / State Law
+_____%
+[Date]
+FCPA / Anti-Bribery
+Sales, Finance, Execs
+Annual
+FCPA / DOJ
+_____%
+[Date]
+Data Privacy & HIPAA
+All Data Handlers
+Annual + On Hire
+HIPAA / CCPA
+_____%
+[Date]
+Insider Trading Policy
+Executives / Finance / Legal
+Annual
+SEC / SOX
+_____%
+[Date]
+Workplace Safety (OSHA)
+Operations / Facilities
+Annual + On Hire
+OSHA
+_____%
+[Date]
+
+7. POLICIES & PROCEDURES LIBRARY
+Maintain a current index of all compliance-related policies and procedures. Review and update each policy at least annually.
+
+Policy / Procedure
+Governing Law
+Version
+Last Reviewed
+Next Review
+Document Owner
+Code of Ethics & Business Conduct
+FCPA / SEC / Internal
+v3.1
+[Date]
+[Date]
+General Counsel
+Anti-Harassment Policy
+Title VII / State Laws
+v2.4
+[Date]
+[Date]
+HR Legal
+Data Privacy & Protection Policy
+CCPA / HIPAA / TDPSA
+v1.8
+[Date]
+[Date]
+Privacy Officer
+Insider Trading & Securities Policy
+SEC Rule 10b-5 / SOX
+v2.0
+[Date]
+[Date]
+General Counsel
+Records Retention Policy
+IRS / SOX / EEOC
+v1.5
+[Date]
+[Date]
+Records Manager
+Whistleblower / Non-Retaliation Policy
+SOX § 806 / Dodd-Frank
+v1.2
+[Date]
+[Date]
+General Counsel
+[Policy Name]
+[Law]
+[v#]
+[Date]
+[Date]
+[Owner]
+
+8. COMPLIANCE AUDIT & REVIEW
+8.1 Internal Audit Schedule
+
+Audit Area
+Scope
+Frequency
+Next Audit Date
+Auditor
+Status
+Employment Law
+Wage classification, I-9 compliance, accommodation procedures
+Annual
+[Date]
+External Counsel
+Scheduled
+Data Privacy
+CCPA compliance, data mapping, vendor contracts
+Annual
+[Date]
+Privacy Officer
+Pending
+Financial Controls
+SOX 404 internal controls, expense reimbursement
+Quarterly
+[Date]
+Internal Audit
+Recurring
+Vendor & Third-Party
+FCPA due diligence, vendor contract compliance
+Bi-annual
+[Date]
+Legal / Procurement
+In Progress
+
+8.2 Audit Finding Tracker
+
+ID
+Date
+Finding
+Area / Law
+Severity
+Action Required
+Resolution / Date
+AF-001
+[Date]
+[Audit finding description]
+[Area / Law]
+[Low/Med/High]
+[Required action]
+[Resolution and date]
+
+9. ESCALATION PROCEDURES & REPORTING
+9.1 Escalation Matrix
+All compliance concerns must be reported through appropriate channels. Retaliation against good-faith reporters is strictly prohibited under 18 U.S.C. § 1514A (SOX Whistleblower Protection) and applicable state laws.
+
+Issue Type
+Severity
+First Escalation
+Second Escalation
+Employment Violation
+Low–Medium
+HR Legal Liaison
+General Counsel
+Financial / Securities
+Any
+Chief Compliance Officer
+Audit Committee / Board
+Data Breach / Privacy
+High / Critical
+Privacy Officer + CCO
+General Counsel + CEO
+Bribery / Corruption
+Any
+CCO + General Counsel
+Board / DOJ / SEC (if required)
+
+9.2 External Reporting Obligations
+Certain violations require mandatory disclosure to government agencies. Failure to comply may constitute an independent violation. Key mandatory reporting scenarios include:
+	•	Data breach affecting 500+ individuals: Notify HHS/OCR within 60 days (HIPAA); notify affected individuals per applicable state law (varies 30–90 days)
+	•	Securities violations: Report to SEC via Form 8-K within 4 business days of materiality determination
+	•	Workplace injuries resulting in hospitalization: Notify OSHA within 24 hours (serious injuries) or 8 hours (fatalities)
+	•	Suspected FCPA violation: Consult external counsel immediately; voluntary disclosure to DOJ/SEC may be appropriate
+	•	Sanctions violations: Notify OFAC; no voluntary exception — contact outside counsel immediately
+
+10. DOCUMENT REVISION HISTORY
+
+Version
+Date
+Summary of Changes
+Revised By
+Approved By
+1.0
+[Date]
+Initial template release
+[Name / Title]
+[Name / Title]
+[v#]
+[Date]
+[Description]
+[Name / Title]
+[Name / Title]
+
+This document is designated CONFIDENTIAL — ATTORNEY-CLIENT PRIVILEGED. Distribution is restricted to authorized personnel only. Contact the Legal Department with any questions regarding the use or distribution of this template.
+
+© 2026 [Organization Name]. All rights reserved. For internal use only.

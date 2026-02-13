@@ -40,6 +40,48 @@ class ContractTemplate(models.Model):
         return f"{self.name} v{self.version}"
 
 
+class TemplateFile(models.Model):
+    """DB-backed storage for plain-text templates previously stored as .txt files."""
+
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('archived', 'Archived'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Optional tenant scoping. When null, template is considered "global".
+    tenant_id = models.UUIDField(null=True, blank=True, db_index=True)
+    filename = models.CharField(max_length=255, unique=True, db_index=True)
+    name = models.CharField(max_length=255)
+    contract_type = models.CharField(max_length=100, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    content = models.TextField()
+
+    created_by_id = models.UUIDField(null=True, blank=True)
+    created_by_email = models.EmailField(null=True, blank=True)
+
+    signature_fields_config = models.JSONField(default=dict, blank=True)
+    signature_fields_updated_at = models.DateTimeField(null=True, blank=True)
+    signature_fields_updated_by_id = models.UUIDField(null=True, blank=True)
+    signature_fields_updated_by_email = models.EmailField(null=True, blank=True)
+
+    meta = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'template_files'
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['tenant_id', 'updated_at'], name='tmpl_tenant_updated_idx'),
+        ]
+
+    def __str__(self):
+        return f"{self.filename}"
+
+
 class Clause(models.Model):
     """Reusable contract clause with versioning"""
     STATUS_CHOICES = [

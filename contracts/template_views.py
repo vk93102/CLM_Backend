@@ -13,7 +13,7 @@ from .template_definitions import (
     validate_template_data,
     TEMPLATE_TYPES
 )
-from .models import ContractTemplate
+from .models import ContractTemplate, TemplateFile
 from .serializers import ContractTemplateSerializer
 import uuid
 
@@ -179,7 +179,6 @@ class TemplateFileView(APIView):
         """Get template file content"""
         import os
         from django.conf import settings
-        from django.http import FileResponse, HttpResponse
         
         # Map template types to file names
         template_files = {
@@ -198,17 +197,32 @@ class TemplateFileView(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
         
         template_path = os.path.join(settings.BASE_DIR, 'templates', filename)
-        
+
+        # Prefer DB-backed templates.
+        try:
+            tmpl = TemplateFile.objects.filter(filename=filename).first()
+            if tmpl:
+                content = tmpl.content or ''
+                return Response({
+                    'success': True,
+                    'template_type': template_type,
+                    'filename': filename,
+                    'content': content,
+                    'size': len(content.encode('utf-8'))
+                }, status=status.HTTP_200_OK)
+        except Exception:
+            pass
+
+        # Transitional fallback: if DB isn't populated yet, read from filesystem.
         if not os.path.exists(template_path):
             return Response({
                 'success': False,
-                'error': f'Template file not found: {filename}'
+                'error': f'Template not found in DB or filesystem: {filename}'
             }, status=status.HTTP_404_NOT_FOUND)
-        
+
         try:
             with open(template_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
             return Response({
                 'success': True,
                 'template_type': template_type,

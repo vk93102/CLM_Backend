@@ -5,6 +5,7 @@ import os
 import hashlib
 import json
 import time
+import uuid
 from queue import Empty, Queue
 from threading import Lock
 
@@ -15,6 +16,7 @@ import textwrap
 
 from django.core.files.base import ContentFile
 from django.core.mail import send_mail
+from django.db.models import Q
 from django.http import FileResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -26,6 +28,8 @@ from rest_framework.response import Response
 
 from contracts.firma_service import FirmaAPIService, FirmaApiError
 from contracts.models import Contract, ContractVersion, FirmaSignatureContract, FirmaSigner, FirmaSigningAuditLog
+from contracts.models import TemplateFile
+from contracts.utils.template_files_db import get_or_import_template_from_filesystem
 from authentication.r2_service import R2StorageService
 
 from django.conf import settings
@@ -44,22 +48,23 @@ def _safe_template_filename(name: str) -> str | None:
    return base
 
 
-def _read_template_file_signature_config(*, template_filename: str) -> dict | None:
-   """Read signature_fields_config from filesystem template meta json."""
+def _read_template_file_signature_config(*, template_filename: str, tenant_id: uuid.UUID | None = None) -> dict | None:
+   """Read signature_fields_config from DB-backed TemplateFile."""
    safe = _safe_template_filename(template_filename)
    if not safe:
        return None
 
    try:
-       template_path = os.path.join(settings.BASE_DIR, 'templates', safe)
-       meta_path = f'{template_path}.meta.json'
-       if not os.path.exists(meta_path):
-           return None
-       with open(meta_path, 'r', encoding='utf-8') as f:
-           meta = json.load(f) or {}
-       if not isinstance(meta, dict):
-           return None
-       cfg = meta.get('signature_fields_config')
+       qs = TemplateFile.objects.filter(filename=safe)
+       if tenant_id:
+           qs = qs.filter(Q(tenant_id=tenant_id) | Q(tenant_id__isnull=True))
+       tmpl = qs.first()
+       if not tmpl:
+           tmpl = get_or_import_template_from_filesystem(filename=safe, tenant_id=tenant_id)
+           if not tmpl:
+               return None
+
+       cfg = tmpl.signature_fields_config
        if isinstance(cfg, dict) and isinstance(cfg.get('fields'), list):
            return cfg
    except Exception:
@@ -256,7 +261,7 @@ def _get_signature_field_config(contract: Contract) -> dict:
    # so future contracts reuse it.
    template_filename = metadata.get('template_filename') or metadata.get('template')
    if isinstance(template_filename, str) and template_filename.strip():
-       cfg = _read_template_file_signature_config(template_filename=template_filename)
+       cfg = _read_template_file_signature_config(template_filename=template_filename, tenant_id=getattr(contract, 'tenant_id', None))
        if cfg:
            return cfg
 

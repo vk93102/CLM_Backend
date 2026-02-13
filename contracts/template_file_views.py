@@ -4,11 +4,15 @@ import re
 import uuid
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
+
+from contracts.models import TemplateFile
+from contracts.utils.template_files_db import get_or_import_template_from_filesystem
 
 
 def _template_entity_uuid(filename: str) -> uuid.UUID:
@@ -23,16 +27,17 @@ def _best_effort_index_template_for_tenant(*, tenant_id: uuid.UUID, filename: st
         from search.models import SearchIndexModel
         from search.services import SearchIndexingService
 
-        templates_dir = _templates_dir()
-        path = os.path.join(templates_dir, filename)
-        if not os.path.exists(path):
+        tmpl = TemplateFile.objects.filter(filename=filename).first()
+        if not tmpl:
             return
 
         try:
-            mtime_epoch = os.path.getmtime(path)
-            size = os.path.getsize(path)
+            updated_at_epoch = float(tmpl.updated_at.timestamp()) if tmpl.updated_at else None
         except Exception:
-            mtime_epoch = None
+            updated_at_epoch = None
+        try:
+            size = len((tmpl.content or '').encode('utf-8'))
+        except Exception:
             size = None
 
         entity_id = _template_entity_uuid(filename)
@@ -45,31 +50,26 @@ def _best_effort_index_template_for_tenant(*, tenant_id: uuid.UUID, filename: st
         existing_md = (existing.metadata or {}) if existing else {}
         if (
             isinstance(existing_md, dict)
-            and mtime_epoch is not None
-            and existing_md.get('source_mtime_epoch') == mtime_epoch
+            and updated_at_epoch is not None
+            and existing_md.get('source_updated_at_epoch') == updated_at_epoch
             and size is not None
             and existing_md.get('source_size') == size
         ):
             return
 
-        # Read content (bounded for embeddings cost)
-        try:
-            with open(path, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
-        except Exception:
-            content = ''
+        content = tmpl.content or ''
 
         SearchIndexingService.create_index(
             entity_type='template',
             entity_id=str(entity_id),
-            title=_display_name_from_filename(filename),
+            title=(tmpl.name or _display_name_from_filename(filename)),
             content=(content or '')[:20000],
             tenant_id=str(tenant_id),
-            keywords=[_infer_template_type(filename)],
+            keywords=[tmpl.contract_type or _infer_template_type(filename)],
             metadata={
-                'source': 'template_files',
+                'source': 'template_files_db',
                 'filename': filename,
-                'source_mtime_epoch': mtime_epoch,
+                'source_updated_at_epoch': updated_at_epoch,
                 'source_size': size,
             },
         )
@@ -77,40 +77,30 @@ def _best_effort_index_template_for_tenant(*, tenant_id: uuid.UUID, filename: st
         return
 
 
-def _templates_dir() -> str:
-    return os.path.join(settings.BASE_DIR, "templates")
+def _template_queryset_for_request(request):
+    """Templates visible to the current request.
+
+    Backward-compatible behavior: the legacy filesystem endpoints were public and
+    returned all templates regardless of authentication, so we keep the DB-backed
+    equivalents consistent.
+    """
+    return TemplateFile.objects.all()
 
 
-def _meta_path_for_template(template_path: str) -> str:
-    return f"{template_path}.meta.json"
-
-
-def _json_safe(value):
-    if isinstance(value, uuid.UUID):
-        return str(value)
-    if isinstance(value, dict):
-        return {k: _json_safe(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_json_safe(v) for v in value]
-    return value
-
-
-def _read_template_meta(template_path: str) -> dict:
-    meta_path = _meta_path_for_template(template_path)
-    if not os.path.exists(meta_path):
-        return {}
-    try:
-        with open(meta_path, "r", encoding="utf-8") as f:
-            data = json.load(f) or {}
-        return data if isinstance(data, dict) else {}
-    except Exception:
-        return {}
-
-
-def _write_template_meta(template_path: str, meta: dict) -> None:
-    meta_path = _meta_path_for_template(template_path)
-    with open(meta_path, "w", encoding="utf-8", newline="") as f:
-        json.dump(_json_safe(meta or {}), f, ensure_ascii=False, indent=2)
+def _get_visible_template(request, filename: str) -> tuple[str, TemplateFile | None]:
+    safe = _sanitize_filename(filename)
+    tmpl = _template_queryset_for_request(request).filter(filename=safe).first()
+    if not tmpl:
+        # Transitional compatibility: auto-import from filesystem if present.
+        try:
+            tenant_id = None
+            user = getattr(request, 'user', None)
+            if getattr(user, 'is_authenticated', False):
+                tenant_id = getattr(user, 'tenant_id', None)
+            tmpl = get_or_import_template_from_filesystem(filename=safe, tenant_id=tenant_id)
+        except Exception:
+            tmpl = None
+    return safe, tmpl
 
 
 def _infer_template_type(filename: str) -> str:
@@ -152,10 +142,10 @@ def _sanitize_filename(name: str) -> str:
 
 
 class TemplateFilesView(APIView):
-    """Filesystem-backed templates (no DB).
+    """DB-backed templates.
 
-    GET  /api/v1/templates/files/  -> list templates in CLM_Backend/templates
-    POST /api/v1/templates/files/  -> create a new .txt template file (auth required)
+    GET  /api/v1/templates/files/  -> list templates from DB
+    POST /api/v1/templates/files/  -> create a new text template in DB (auth required)
     """
 
     def get_permissions(self):
@@ -164,54 +154,49 @@ class TemplateFilesView(APIView):
         return [AllowAny()]
 
     def get(self, request):
-        templates_dir = _templates_dir()
-        if not os.path.isdir(templates_dir):
-            return Response(
-                {"success": True, "count": 0, "results": [], "message": "Templates directory not found"},
-                status=status.HTTP_200_OK,
-            )
+        templates = list(_template_queryset_for_request(request).order_by('-updated_at'))
 
-        files = [f for f in os.listdir(templates_dir) if f.lower().endswith(".txt")]
-        files.sort(key=lambda f: os.path.getmtime(os.path.join(templates_dir, f)), reverse=True)
+        # Transitional compatibility: if DB is empty, import legacy filesystem templates.
+        if not templates:
+            try:
+                tenant_id = None
+                if getattr(request.user, 'is_authenticated', False):
+                    tenant_id = getattr(request.user, 'tenant_id', None)
+
+                fs_dir = os.path.join(settings.BASE_DIR, 'templates')
+                if os.path.isdir(fs_dir):
+                    for fn in os.listdir(fs_dir):
+                        if isinstance(fn, str) and fn.lower().endswith('.txt'):
+                            get_or_import_template_from_filesystem(filename=fn, tenant_id=tenant_id)
+
+                templates = list(_template_queryset_for_request(request).order_by('-updated_at'))
+            except Exception:
+                pass
 
         # Best-effort: keep the tenant's template search index warm.
         try:
             if getattr(request.user, 'is_authenticated', False) and getattr(request.user, 'tenant_id', None):
                 tenant_id = request.user.tenant_id
                 # Keep it bounded; index the most-recent N.
-                for fn in files[:50]:
-                    _best_effort_index_template_for_tenant(tenant_id=tenant_id, filename=fn)
+                for tmpl in templates[:50]:
+                    _best_effort_index_template_for_tenant(tenant_id=tenant_id, filename=tmpl.filename)
         except Exception:
             pass
 
         results = []
-        for filename in files:
-            path = os.path.join(templates_dir, filename)
-            meta = _read_template_meta(path)
-
-            try:
-                mtime = timezone.datetime.fromtimestamp(
-                    os.path.getmtime(path), tz=timezone.get_current_timezone()
-                )
-                ctime = timezone.datetime.fromtimestamp(
-                    os.path.getctime(path), tz=timezone.get_current_timezone()
-                )
-            except Exception:
-                mtime = timezone.now()
-                ctime = timezone.now()
-
+        for tmpl in templates:
             results.append(
                 {
-                    "id": filename,
-                    "filename": filename,
-                    "name": _display_name_from_filename(filename),
-                    "contract_type": _infer_template_type(filename),
-                    "status": "active",
-                    "created_at": ctime.isoformat(),
-                    "updated_at": mtime.isoformat(),
-                    "created_by_id": meta.get("created_by_id"),
-                    "created_by_email": meta.get("created_by_email"),
-                    "description": meta.get("description") or "",
+                    "id": tmpl.filename,
+                    "filename": tmpl.filename,
+                    "name": tmpl.name or _display_name_from_filename(tmpl.filename),
+                    "contract_type": tmpl.contract_type or _infer_template_type(tmpl.filename),
+                    "status": tmpl.status or "active",
+                    "created_at": (tmpl.created_at or timezone.now()).isoformat(),
+                    "updated_at": (tmpl.updated_at or timezone.now()).isoformat(),
+                    "created_by_id": str(tmpl.created_by_id) if tmpl.created_by_id else None,
+                    "created_by_email": tmpl.created_by_email,
+                    "description": tmpl.description or "",
                 }
             )
 
@@ -229,35 +214,32 @@ class TemplateFilesView(APIView):
         proposed = filename or name or "New Template"
         safe = _sanitize_filename(proposed)
 
-        templates_dir = _templates_dir()
-        os.makedirs(templates_dir, exist_ok=True)
-
-        path = os.path.join(templates_dir, safe)
-        if os.path.exists(path):
+        if TemplateFile.objects.filter(filename=safe).exists():
             return Response(
                 {"success": False, "error": "A template with that filename already exists", "filename": safe},
                 status=status.HTTP_409_CONFLICT,
             )
 
-        with open(path, "w", encoding="utf-8", newline="") as f:
-            f.write(content)
-
-        now = timezone.now().isoformat()
         created_by_id = getattr(request.user, "user_id", None)
         created_by_email = getattr(request.user, "email", None)
         tenant_id = getattr(request.user, 'tenant_id', None)
 
-        _write_template_meta(
-            path,
-            {
-                "created_by_id": str(created_by_id) if created_by_id else None,
-                "created_by_email": created_by_email,
-                "tenant_id": str(tenant_id) if tenant_id else None,
-                "description": description,
-                "created_at": now,
-                "updated_at": now,
+        tmpl = TemplateFile.objects.create(
+            tenant_id=tenant_id,
+            filename=safe,
+            name=_display_name_from_filename(safe),
+            contract_type=_infer_template_type(safe),
+            description=description,
+            status='active',
+            content=content,
+            created_by_id=created_by_id,
+            created_by_email=created_by_email,
+            meta={
+                'created_from': 'api',
             },
         )
+
+        now = (tmpl.created_at or timezone.now()).isoformat()
 
         # Best-effort: index new template for semantic/keyword search.
         try:
@@ -276,7 +258,7 @@ class TemplateFilesView(APIView):
                     "contract_type": _infer_template_type(safe),
                     "status": "active",
                     "created_at": now,
-                    "updated_at": now,
+                    "updated_at": (tmpl.updated_at or timezone.now()).isoformat(),
                     "created_by_id": str(created_by_id) if created_by_id else None,
                     "created_by_email": created_by_email,
                     "description": description,
@@ -292,60 +274,33 @@ class TemplateMyFilesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        templates_dir = _templates_dir()
-        if not os.path.isdir(templates_dir):
-            return Response(
-                {"success": True, "count": 0, "results": [], "message": "Templates directory not found"},
-                status=status.HTTP_200_OK,
-            )
-
         user_id = getattr(request.user, "user_id", None)
         user_id_str = str(user_id) if user_id else None
         email = getattr(request.user, "email", None)
 
-        files = [f for f in os.listdir(templates_dir) if f.lower().endswith(".txt")]
-        files.sort(key=lambda f: os.path.getmtime(os.path.join(templates_dir, f)), reverse=True)
+        qs = _template_queryset_for_request(request)
+        if user_id_str or email:
+            q = Q()
+            if user_id_str:
+                q |= Q(created_by_id=user_id)
+            if email:
+                q |= Q(created_by_email=email)
+            qs = qs.filter(q)
 
         results = []
-        for filename in files:
-            path = os.path.join(templates_dir, filename)
-            meta = _read_template_meta(path)
-            if not meta:
-                continue
-
-            meta_created_by_id = meta.get("created_by_id")
-            meta_created_by_id_str = str(meta_created_by_id) if meta_created_by_id else None
-
-            if user_id_str and meta_created_by_id_str == user_id_str:
-                pass
-            elif email and meta.get("created_by_email") == email:
-                pass
-            else:
-                continue
-
-            try:
-                mtime = timezone.datetime.fromtimestamp(
-                    os.path.getmtime(path), tz=timezone.get_current_timezone()
-                )
-                ctime = timezone.datetime.fromtimestamp(
-                    os.path.getctime(path), tz=timezone.get_current_timezone()
-                )
-            except Exception:
-                mtime = timezone.now()
-                ctime = timezone.now()
-
+        for tmpl in qs.order_by('-updated_at'):
             results.append(
                 {
-                    "id": filename,
-                    "filename": filename,
-                    "name": _display_name_from_filename(filename),
-                    "contract_type": _infer_template_type(filename),
-                    "status": "active",
-                    "created_at": ctime.isoformat(),
-                    "updated_at": mtime.isoformat(),
-                    "created_by_id": meta.get("created_by_id"),
-                    "created_by_email": meta.get("created_by_email"),
-                    "description": meta.get("description") or "",
+                    "id": tmpl.filename,
+                    "filename": tmpl.filename,
+                    "name": tmpl.name or _display_name_from_filename(tmpl.filename),
+                    "contract_type": tmpl.contract_type or _infer_template_type(tmpl.filename),
+                    "status": tmpl.status or "active",
+                    "created_at": (tmpl.created_at or timezone.now()).isoformat(),
+                    "updated_at": (tmpl.updated_at or timezone.now()).isoformat(),
+                    "created_by_id": str(tmpl.created_by_id) if tmpl.created_by_id else None,
+                    "created_by_email": tmpl.created_by_email,
+                    "description": tmpl.description or "",
                 }
             )
 
@@ -358,27 +313,23 @@ class TemplateFileContentView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, filename: str):
-        safe = _sanitize_filename(filename)
-        templates_dir = _templates_dir()
-        path = os.path.join(templates_dir, safe)
-
-        if not os.path.exists(path):
+        safe, tmpl = _get_visible_template(request, filename)
+        if not tmpl:
             return Response(
                 {"success": False, "error": "Template file not found", "filename": safe},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
+        content = tmpl.content or ''
 
         return Response(
             {
                 "success": True,
                 "filename": safe,
-                "name": _display_name_from_filename(safe),
-                "template_type": _infer_template_type(safe),
+                "name": tmpl.name or _display_name_from_filename(safe),
+                "template_type": tmpl.contract_type or _infer_template_type(safe),
                 "content": content,
-                "size": os.path.getsize(path),
+                "size": len((content or '').encode('utf-8')),
             },
             status=status.HTTP_200_OK,
         )
@@ -458,24 +409,22 @@ class TemplateFileSignatureFieldsConfigView(APIView):
     GET  /api/v1/templates/files/signature-fields-config/<filename>/
     PUT  /api/v1/templates/files/signature-fields-config/<filename>/
 
-    Stored in: <template>.meta.json -> signature_fields_config
+    Stored in DB: TemplateFile.signature_fields_config
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request, filename: str):
-        safe = _sanitize_filename(filename)
-        path = os.path.join(_templates_dir(), safe)
-        if not os.path.exists(path):
+        safe, tmpl = _get_visible_template(request, filename)
+        if not tmpl:
             return Response({"success": False, "error": "Template file not found", "filename": safe}, status=404)
 
-        meta = _read_template_meta(path)
-        cfg = meta.get("signature_fields_config")
+        cfg = tmpl.signature_fields_config
         if not isinstance(cfg, dict) or not isinstance(cfg.get("fields"), list):
             cfg = _default_signature_fields_config()
             source = "default"
         else:
-            source = "template_meta"
+            source = "template_db"
 
         return Response(
             {
@@ -488,9 +437,8 @@ class TemplateFileSignatureFieldsConfigView(APIView):
         )
 
     def put(self, request, filename: str):
-        safe = _sanitize_filename(filename)
-        path = os.path.join(_templates_dir(), safe)
-        if not os.path.exists(path):
+        safe, tmpl = _get_visible_template(request, filename)
+        if not tmpl:
             return Response({"success": False, "error": "Template file not found", "filename": safe}, status=404)
 
         cfg = request.data
@@ -498,21 +446,27 @@ class TemplateFileSignatureFieldsConfigView(APIView):
         if errors:
             return Response({"success": False, "error": "Invalid configuration", "validation_errors": errors}, status=400)
 
-        meta = _read_template_meta(path)
-        meta["signature_fields_config"] = {
+        cfg_to_save = {
             "fields": cfg.get("fields", []),
             "auto_stack": bool(cfg.get("auto_stack", True)),
             "stack_spacing": int(cfg.get("stack_spacing", 12)),
             "source": "template_editor",
         }
-        meta["signature_fields_updated_at"] = timezone.now().isoformat()
-        meta["signature_fields_updated_by_id"] = str(getattr(request.user, "user_id", "") or "") or None
-        meta["signature_fields_updated_by_email"] = getattr(request.user, "email", None)
 
-        _write_template_meta(path, meta)
+        tmpl.signature_fields_config = cfg_to_save
+        tmpl.signature_fields_updated_at = timezone.now()
+        tmpl.signature_fields_updated_by_id = getattr(request.user, "user_id", None)
+        tmpl.signature_fields_updated_by_email = getattr(request.user, "email", None)
+        tmpl.save(update_fields=[
+            'signature_fields_config',
+            'signature_fields_updated_at',
+            'signature_fields_updated_by_id',
+            'signature_fields_updated_by_email',
+            'updated_at',
+        ])
 
         return Response(
-            {"success": True, "filename": safe, "config": meta["signature_fields_config"]},
+            {"success": True, "filename": safe, "config": tmpl.signature_fields_config},
             status=status.HTTP_200_OK,
         )
 
@@ -527,9 +481,8 @@ class TemplateFileDragSignaturePositionsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, filename: str):
-        safe = _sanitize_filename(filename)
-        path = os.path.join(_templates_dir(), safe)
-        if not os.path.exists(path):
+        safe, tmpl = _get_visible_template(request, filename)
+        if not tmpl:
             return Response({"success": False, "error": "Template file not found", "filename": safe}, status=404)
 
         positions = request.data.get("positions", [])
@@ -576,12 +529,17 @@ class TemplateFileDragSignaturePositionsView(APIView):
         if errors:
             return Response({"success": False, "error": "Invalid positions", "validation_errors": errors}, status=400)
 
-        meta = _read_template_meta(path)
-        meta["signature_fields_config"] = cfg
-        meta["signature_fields_updated_at"] = timezone.now().isoformat()
-        meta["signature_fields_updated_by_id"] = str(getattr(request.user, "user_id", "") or "") or None
-        meta["signature_fields_updated_by_email"] = getattr(request.user, "email", None)
-        _write_template_meta(path, meta)
+        tmpl.signature_fields_config = cfg
+        tmpl.signature_fields_updated_at = timezone.now()
+        tmpl.signature_fields_updated_by_id = getattr(request.user, "user_id", None)
+        tmpl.signature_fields_updated_by_email = getattr(request.user, "email", None)
+        tmpl.save(update_fields=[
+            'signature_fields_config',
+            'signature_fields_updated_at',
+            'signature_fields_updated_by_id',
+            'signature_fields_updated_by_email',
+            'updated_at',
+        ])
 
         return Response({"success": True, "filename": safe, "fields_count": len(fields), "config": cfg}, status=status.HTTP_200_OK)
 
@@ -700,20 +658,16 @@ class TemplateFileSchemaView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, filename: str):
-        safe = _sanitize_filename(filename)
-        templates_dir = _templates_dir()
-        path = os.path.join(templates_dir, safe)
-
-        if not os.path.exists(path):
+        safe, tmpl = _get_visible_template(request, filename)
+        if not tmpl:
             return Response(
                 {"success": False, "error": "Template file not found", "filename": safe},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        with open(path, "r", encoding="utf-8") as f:
-            raw_text = f.read()
+        raw_text = tmpl.content or ''
 
-        template_type = _infer_template_type(safe)
+        template_type = tmpl.contract_type or _infer_template_type(safe)
         placeholders = _extract_placeholders(raw_text)
         sections = _schema_for_contract_type(template_type)
 
@@ -728,7 +682,7 @@ class TemplateFileSchemaView(APIView):
             {
                 "success": True,
                 "filename": safe,
-                "name": _display_name_from_filename(safe),
+                "name": tmpl.name or _display_name_from_filename(safe),
                 "template_type": template_type,
                 "placeholders": placeholders,
                 "sections": sections,
