@@ -9,6 +9,9 @@ from rest_framework import status
 import time
 import logging
 
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+
 from .services import (
     FullTextSearchService,
     SemanticSearchService,
@@ -21,6 +24,14 @@ from .services import (
 )
 from .serializers import SearchIndexSerializer
 from .models import SearchIndexModel, SearchAnalyticsModel
+
+from .openapi_serializers import (
+    SearchAdvancedRequestSerializer,
+    SearchFacetedRequestSerializer,
+    SearchHybridRequestSerializer,
+    SearchIndexUpsertRequestSerializer,
+    SearchSimilarByTextRequestSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +46,14 @@ class SearchKeywordView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('q', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
+            OpenApiParameter('limit', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter('entity_type', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         """
         Perform full-text keyword search
@@ -103,6 +122,15 @@ class SearchSemanticView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('q', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
+            OpenApiParameter('limit', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter('similarity_threshold', OpenApiTypes.FLOAT, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter('entity_type', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         """
         Perform semantic search with real Voyage AI embeddings
@@ -203,6 +231,7 @@ class SearchHybridView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(request=SearchHybridRequestSerializer, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         """
         Perform hybrid search with real data
@@ -286,6 +315,7 @@ class SearchAdvancedView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(request=SearchAdvancedRequestSerializer, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         """
         Perform advanced filtered search with real data
@@ -350,6 +380,7 @@ class SearchFacetsView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         """Get available search facets with real data"""
         tenant_id = str(request.user.tenant_id)
@@ -370,6 +401,7 @@ class SearchFacetedView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(request=SearchFacetedRequestSerializer, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         """Perform faceted search with real filtering"""
         try:
@@ -420,6 +452,13 @@ class SearchSuggestionsView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('q', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
+            OpenApiParameter('limit', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         """Get real search suggestions based on indexed content"""
         query = request.query_params.get('q', '').strip()
@@ -453,6 +492,7 @@ class SearchIndexingView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(request=SearchIndexUpsertRequestSerializer, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         """
         Create or update search index with real data
@@ -507,6 +547,7 @@ class SearchAnalyticsView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         """Get real search analytics with actual data"""
         tenant_id = str(request.user.tenant_id)
@@ -555,6 +596,13 @@ class SearchSimilarView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('id', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
+            OpenApiParameter('limit', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         tenant_id = str(request.user.tenant_id)
         limit = int(request.query_params.get('limit', 20))
@@ -586,6 +634,7 @@ class SearchSimilarView(APIView):
         results = SemanticSearchService.get_semantic_metadata(list(qs))
         return Response({'source_id': str(source.id), 'results': results, 'count': len(results), 'success': True})
 
+    @extend_schema(request=SearchSimilarByTextRequestSerializer, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         tenant_id = str(request.user.tenant_id)
         text = (request.data.get('text') or '').strip()

@@ -405,6 +405,10 @@ SPECTACULAR_SETTINGS = {
             }
         }
     },
+    # Makes Swagger UI less frustrating during manual testing.
+    'SWAGGER_UI_SETTINGS': {
+        'persistAuthorization': True,
+    },
 }
 
 # Cloudflare R2 settings (used by authentication.r2_service.R2StorageService)

@@ -7,6 +7,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
+from drf_spectacular.utils import extend_schema
 import secrets
 from datetime import timedelta
 from django.conf import settings
@@ -15,6 +17,25 @@ from django.utils import timezone
 from .models import User
 from .otp_service import OTPService
 from tenants.models import TenantModel
+
+from .openapi_serializers import (
+    ForgotPasswordRequestSerializer,
+    GoogleLoginRequestSerializer,
+    LoginRequestSerializer,
+    LoginResponseSerializer,
+    MessageResponseSerializer,
+    RefreshTokenRequestSerializer,
+    RefreshTokenResponseSerializer,
+    RegisterRequestSerializer,
+    RegisterResponseSerializer,
+    RequestOTPRequestSerializer,
+    ResetPasswordRequestSerializer,
+    UserContextSerializer,
+    VerifyEmailOTPRequestSerializer,
+    VerifyEmailOTPResponseSerializer,
+    VerifyPasswordResetOTPRequestSerializer,
+    VerifyPasswordResetOTPResponseSerializer,
+)
 import uuid
 import os
 import logging
@@ -86,6 +107,7 @@ class TokenView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
     
+    @extend_schema(request=LoginRequestSerializer, responses={200: LoginResponseSerializer})
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
         password = request.data.get('password', '')
@@ -155,6 +177,7 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
     
+    @extend_schema(request=RegisterRequestSerializer, responses={201: RegisterResponseSerializer})
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
         password = request.data.get('password', '')
@@ -249,6 +272,7 @@ class CurrentUserView(APIView):
     """GET /api/auth/me/ - Get current user"""
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(responses={200: UserContextSerializer})
     def get(self, request):
         user = request.user
         # Works for both DB-backed User and stateless JWTClaimsUser.
@@ -277,6 +301,7 @@ class LogoutView(APIView):
     """POST /api/auth/logout/ - Logout"""
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(responses={200: MessageResponseSerializer})
     def post(self, request):
         return Response({'message': 'Logged out'}, status=status.HTTP_200_OK)
 
@@ -286,6 +311,7 @@ class RefreshTokenView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
     
+    @extend_schema(request=RefreshTokenRequestSerializer, responses={200: RefreshTokenResponseSerializer})
     def post(self, request):
         refresh_token = request.data.get('refresh', '')
         if not refresh_token:
@@ -303,6 +329,7 @@ class RequestLoginOTPView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
     
+    @extend_schema(request=RequestOTPRequestSerializer, responses={200: MessageResponseSerializer})
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
         if not email:
@@ -328,6 +355,7 @@ class VerifyEmailOTPView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
     
+    @extend_schema(request=VerifyEmailOTPRequestSerializer, responses={200: VerifyEmailOTPResponseSerializer})
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
         otp = request.data.get('otp', '').strip()
@@ -384,6 +412,7 @@ class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
 
+    @extend_schema(request=GoogleLoginRequestSerializer, responses={200: LoginResponseSerializer})
     def post(self, request):
         if google_id_token is None or google_requests is None:
             return Response(
@@ -522,6 +551,7 @@ class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
     
+    @extend_schema(request=ForgotPasswordRequestSerializer, responses={200: MessageResponseSerializer})
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
         if not email:
@@ -546,6 +576,7 @@ class VerifyPasswordResetOTPView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
     
+    @extend_schema(request=VerifyPasswordResetOTPRequestSerializer, responses={200: VerifyPasswordResetOTPResponseSerializer})
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
         otp = request.data.get('otp', '').strip()
@@ -568,6 +599,7 @@ class ResendPasswordResetOTPView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
     
+    @extend_schema(request=RequestOTPRequestSerializer, responses={200: MessageResponseSerializer})
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
         if not email:
@@ -592,6 +624,7 @@ class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = 'auth'
     
+    @extend_schema(request=ResetPasswordRequestSerializer, responses={200: MessageResponseSerializer})
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
         otp = request.data.get('otp', '').strip()
