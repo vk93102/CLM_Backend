@@ -14,6 +14,18 @@ This document describes the **currently mounted** API endpoints in this Django/D
 - **Versioned API**: `/api/v1/*`
 - **Search API (frontend uses this)**: `/api/search/*`
 - **Notifications (legacy prefix)**: `/api/notifications/*`
+- **Swagger UI**: `GET /api/docs/`
+- **OpenAPI schema**: `GET /api/schema/`
+
+## Feature docs
+
+See `docs/FEATURES_INDEX.md` for one Markdown file per feature.
+
+## Swagger usage
+
+- Open Swagger UI at `GET /api/docs/`.
+- Click **Authorize** and enter `Bearer <access_token>`.
+- Swagger is grouped by feature tags (e.g. Authentication, Contracts, Templates, Firma E-Sign).
 
 ---
 

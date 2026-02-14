@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_spectacular',
     'corsheaders',
     'authentication',
     'contracts',
@@ -348,6 +349,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'clm_backend.schema.FeatureAutoSchema',
     'DEFAULT_THROTTLE_CLASSES': [
         'clm_backend.throttling.TenantUserRateThrottle',
         'rest_framework.throttling.AnonRateThrottle',
@@ -382,6 +384,29 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
+# OpenAPI / Swagger (drf-spectacular)
+SPECTACULAR_SETTINGS = {
+    'TITLE': os.getenv('OPENAPI_TITLE', 'CLM Backend API'),
+    'DESCRIPTION': os.getenv(
+        'OPENAPI_DESCRIPTION',
+        'Contract lifecycle management backend (Django REST Framework).'
+    ),
+    'VERSION': os.getenv('OPENAPI_VERSION', '1.0.0'),
+    # Expose Bearer auth in Swagger UI.
+    'SECURITY': [{'bearerAuth': []}],
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENTS': {
+        'securitySchemes': {
+            'bearerAuth': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+            }
+        }
+    },
+}
+
 # Cloudflare R2 settings (used by authentication.r2_service.R2StorageService)
 R2_ACCOUNT_ID = os.getenv('R2_ACCOUNT_ID', '')
 R2_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID', '')
@@ -405,28 +430,52 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:4000",
     "http://127.0.0.1:4000",
     "https://lawflow-267708864896.asia-south1.run.app",
-    # Production - Netlify
     "https://verdant-douhua-1148be.netlify.app",
     "http://127.0.0.1:8000",
-    "https://lawflow.lawflow-dev.workers.dev/",
-    # Production - Render
+    "https://lawflow.lawflow-dev.workers.dev",
     "http://127.0.0.1:8000",
-    # Allow all origins (for development/testing - restrict in production)
     "http://localhost",
     "http://127.0.0.1",
 ]
 
-# Allow adding more CORS origins via env without code changes.
-# Example:
-#   CORS_ALLOWED_ORIGINS_EXTRA=https://<your-site>.netlify.app,https://<your-site>.vercel.app
+
+def _normalize_cors_origin(origin: str) -> str | None:
+    """Normalize an origin to scheme://host[:port] (no path/query/fragment).
+
+    django-cors-headers rejects origins that include paths.
+    """
+
+    raw = (origin or '').strip()
+    if not raw:
+        return None
+
+    # If it's a full URL, reduce to origin.
+    try:
+        parsed = urlparse(raw)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+    except Exception:
+        pass
+
+    # Fallback: keep string but strip trailing slashes.
+    return raw.rstrip('/') or None
+
+
+# Normalize hard-coded origins (defensive; avoids accidental paths).
+_normalized = []
+for _o in CORS_ALLOWED_ORIGINS:
+    _n = _normalize_cors_origin(_o)
+    if _n and _n not in _normalized:
+        _normalized.append(_n)
+CORS_ALLOWED_ORIGINS = _normalized
+
 _cors_extra = os.getenv('CORS_ALLOWED_ORIGINS_EXTRA', '').strip()
 if _cors_extra:
     for _origin in [o.strip() for o in _cors_extra.split(',') if o.strip()]:
-        if _origin not in CORS_ALLOWED_ORIGINS:
-            CORS_ALLOWED_ORIGINS.append(_origin)
+        _normalized_origin = _normalize_cors_origin(_origin)
+        if _normalized_origin and _normalized_origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(_normalized_origin)
 
-# Alternative: Allow all origins (use with caution in production)
-# CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
@@ -443,26 +492,17 @@ CORS_ALLOW_HEADERS = [
     'x-api-key',
 ]
 
-# AI/ML API Keys
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 VOYAGE_API_KEY = os.getenv('VOYAGE_API_KEY', '')
-VOYAGE_CONTEXT = os.getenv('VOYAGE_CONTEXT', '')  # Fallback for compatibility
-
-# ---------------------------------------------------------------------------
-# Security hardening (production-safe defaults)
-# ---------------------------------------------------------------------------
-
-# If behind a proxy/load balancer (Render, Cloudflare, etc), respect forwarded proto.
+VOYAGE_CONTEXT = os.getenv('VOYAGE_CONTEXT', '') 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Enable these in production via env flags.
 SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
 SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
 CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = os.getenv('SECURE_REFERRER_POLICY', 'same-origin')
 
-# HSTS (only effective over HTTPS; keep disabled by default for local dev).
 SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0' if DEBUG else '31536000'))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'True').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
 SECURE_HSTS_PRELOAD = os.getenv('SECURE_HSTS_PRELOAD', 'True').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
