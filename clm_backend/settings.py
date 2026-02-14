@@ -29,6 +29,11 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-dev-key-12345')
 
 DEBUG = os.getenv('DEBUG', 'False').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
 
+# Supabase API configuration (distinct from Postgres DB settings)
+SUPABASE_URL = (os.getenv('SUPABASE_URL') or '').strip() or None
+SUPABASE_ANON_KEY = (os.getenv('SUPABASE_ANON_KEY') or '').strip() or None
+SUPABASE_KEY = (os.getenv('SUPABASE_KEY') or '').strip() or SUPABASE_ANON_KEY or None
+
 # When enabled, refuse to run in production with placeholder secrets.
 SECURITY_STRICT = os.getenv('SECURITY_STRICT', 'False').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
 
@@ -244,6 +249,34 @@ DATABASES = {
 # If a single DATABASE_URL is provided, it takes precedence.
 if DATABASE_URL:
     DATABASES['default'] = _parse_database_url(DATABASE_URL)
+
+
+def _is_supabase_db_host(host: str) -> bool:
+    h = (host or '').strip().lower()
+    if not h:
+        return False
+    return h.endswith('.supabase.co') or h.endswith('.supabase.com') or 'pooler.supabase.com' in h
+
+
+# Enforce "Supabase-only" DB connectivity.
+# This project is intended to run against Supabase Postgres (direct or pooler),
+# not a generic/local Postgres instance.
+SUPABASE_ONLY = os.getenv('SUPABASE_ONLY', 'True').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
+if SUPABASE_ONLY:
+    _db = DATABASES.get('default', {})
+    _engine = (_db.get('ENGINE') or '').strip().lower()
+    _host = (_db.get('HOST') or '').strip()
+    _sslmode = ((_db.get('OPTIONS') or {}).get('sslmode') or '').strip().lower()
+
+    if _engine and _engine != 'django.db.backends.postgresql':
+        raise RuntimeError('SUPABASE_ONLY is enabled but DATABASE engine is not PostgreSQL')
+    if not _is_supabase_db_host(_host):
+        raise RuntimeError(
+            'SUPABASE_ONLY is enabled but DB host is not a Supabase host. '
+            'Set DB_HOST to your Supabase host (e.g. db.<ref>.supabase.co) or pooler (..pooler.supabase.com).'
+        )
+    if _sslmode and _sslmode not in ('require', 'verify-ca', 'verify-full'):
+        raise RuntimeError('SUPABASE_ONLY is enabled but DB sslmode is not secure (expected require/verify-*)')
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
